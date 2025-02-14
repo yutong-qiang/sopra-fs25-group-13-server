@@ -27,8 +27,8 @@
 
         nativeBuildInputs = with pkgs;
           [
-            git
             jdk
+            git
           ]
           ++ lib.optionals stdenv.isDarwin [
             xcodes
