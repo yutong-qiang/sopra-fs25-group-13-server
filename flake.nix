@@ -43,6 +43,10 @@
           shellHook = ''
             export HOST_PROJECT_PATH="$(pwd)"
             export COMPOSE_PROJECT_NAME=sopra-fs25-template-server
+            
+            export PATH="${pkgs.jdk}/bin:$PATH"
+            export PATH="${pkgs.git}/bin:$PATH"
+            
             XCODE_VERSION_OLD="15.3"
             XCODE_VERSION="16.2"
             XCODE_BUILD_OLD="15E204a" 
