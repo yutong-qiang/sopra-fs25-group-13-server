@@ -35,10 +35,12 @@ hs_err_pid*
 
 /build
 *.DS_STORE
+.direnv
 
 # don't track the local.properties -> contains secrets
 local.properties
 
 .vscode
+.xcode*
 
 /bin
