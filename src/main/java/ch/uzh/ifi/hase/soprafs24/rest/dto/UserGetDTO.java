@@ -7,7 +7,9 @@ public class UserGetDTO {
   private Long id;
   private String name;
   private String username;
-  private UserStatus status;
+  // private UserStatus status;
+  private String token;
+  private int wins;
 
   public Long getId() {
     return id;
@@ -33,11 +35,27 @@ public class UserGetDTO {
     this.username = username;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public String getToken() {
+    return token;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setToken(String token) {
+    this.token = token;
   }
+
+  public int getWins() {
+    return wins;
+  }
+
+  public void setWins(int wins) {
+    this.wins = wins;
+  }
+
+  // public UserStatus getStatus() {
+  //   return status;
+  // }
+
+  // public void setStatus(UserStatus status) {
+  //   this.status = status;
+  // }
 }
