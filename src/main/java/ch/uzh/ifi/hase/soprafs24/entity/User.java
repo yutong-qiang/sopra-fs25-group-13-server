@@ -1,9 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-
-import javax.persistence.*;
 import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 
 /**
  * Internal User Representation
@@ -31,11 +35,17 @@ public class User implements Serializable {
   @Column(nullable = false, unique = true)
   private String username;
 
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false)
+  private String password;
+
+  @Column(nullable = true, unique = true)
   private String token;
 
-  @Column(nullable = false)
-  private UserStatus status;
+  // @Column(nullable = false)
+  // private UserStatus status;
+
+  @Column(nullable = true)
+  private int wins;
 
   public Long getId() {
     return id;
@@ -69,11 +79,27 @@ public class User implements Serializable {
     this.token = token;
   }
 
-  public UserStatus getStatus() {
-    return status;
+  public String getPassword() {
+    return password;
   }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
+  public void setPassword(String password) {
+    this.password = password;
   }
+
+  public int getWins() {
+    return wins;
+  }
+
+  public void setWins(int wins) {
+    this.wins = wins;
+  }
+
+  // public UserStatus getStatus() {
+  //   return status;
+  // }
+
+  // public void setStatus(UserStatus status) {
+  //   this.status = status;
+  // }
 }
