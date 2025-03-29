@@ -1,13 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.repository;
 
-import ch.uzh.ifi.hase.soprafs24.entity.User;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 @DataJpaTest
 public class AppRepositoryIntegrationTest {
@@ -16,7 +16,7 @@ public class AppRepositoryIntegrationTest {
   private TestEntityManager entityManager;
 
   @Autowired
-  private AppRepository userRepository;
+  private UserRepository userRepository;
 
   @Test
   public void findByName_success() {

@@ -1,40 +1,49 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
+import java.util.List;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.UUID;
+import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 /**
- * User Service
+ * App Service
  * This class is the "worker" and responsible for all functionality related to
- * the user
+ * the app
  * (e.g., it creates, modifies, deletes, finds). The result will be passed back
  * to the caller.
  */
 @Service
 @Transactional
-public class UserService {
+public class AppService {
 
-  private final Logger log = LoggerFactory.getLogger(UserService.class);
+  private final Logger log = LoggerFactory.getLogger(AppService.class);
 
-  private final AppRepository userRepository;
+  private final UserRepository userRepository;
+  private final GameSessionRepository gameSessionRepository;
+  private final PlayerRepository playerRepository;
 
   @Autowired
-  public UserService(AppRepository userRepository) {
+  public AppService(UserRepository userRepository,
+                    GameSessionRepository gameSessionRepository,
+                    PlayerRepository playerRepository) {
     this.userRepository = userRepository;
+    this.gameSessionRepository = gameSessionRepository;
+    this.playerRepository = playerRepository;
   }
 
   public List<User> getUsers() {
@@ -115,10 +124,57 @@ public class UserService {
   public User getUserByToken(String token) {
     // Assuming you have a token stored in the user entity, find the user by token
     return userRepository.findByToken(token).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-}
+  }
 
+  // get User by Username
+  public User getUserByUsername(String username) {
+    return userRepository.findByUsername(username);
+  }
 
-  public boolean isTokenValid(String token){
+  // check if user token (authToken) is valid
+  public boolean isUserTokenValid(String token){
     return userRepository.existsByToken(token);
   }
+
+  // check if game token is valid
+  public boolean isGameTokenValid(String gameToken){
+    return gameSessionRepository.existsByGameToken(gameToken);
+  }
+
+  // get game session by game token
+  public GameSession getGameSessionByGameToken(String gameToken){
+    return gameSessionRepository.findByGameToken(gameToken).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+  }
+
+  //// createGameSession ////
+  public GameSession createGameSession(User creator) {
+    // create GameSession entity
+    GameSession gameSession = new GameSession();
+    gameSession.setCreator(creator);
+    gameSession.setGameToken(UUID.randomUUID().toString());
+    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+    // save the new game session
+    gameSession = gameSessionRepository.save(gameSession);
+    // flush the changes to the database
+    gameSessionRepository.flush();
+    // return the new game session
+    return gameSession;
+  }
+
+  // add user to game session, making them a player
+  public Player addToGameSession(User participant, GameSession gameSession) {
+    // TODO: check that operation is allowed
+    // e.g. user not already in game session, game session not full, etc.
+    // create player entity
+    Player player = new Player();
+    player.setUser(participant);
+    player.setGameSession(gameSession);
+    // save the changes to the game session
+    playerRepository.save(player);
+    // flush the changes to the database
+    playerRepository.flush();
+    // return the player object
+    return player;
+  }
+
 }
