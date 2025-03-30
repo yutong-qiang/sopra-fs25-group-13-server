@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
@@ -163,6 +164,34 @@ public class AppControllerTest {
         .andExpect(status().isUnauthorized());
   }
 
+
+  @Test
+  public void createGameSession_success() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setName("Test User");
+    user.setUsername("testUsername");
+    user.setToken("1");
+
+    // given a GameSession object
+    GameSession gameSession = new GameSession();
+    gameSession.setId(1L);
+    gameSession.setCreator(user);
+    gameSession.setGameToken("abc123");
+    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+    given(appService.createGameSession(Mockito.any())).willReturn(gameSession);
+
+    MockHttpServletRequestBuilder postRequest = post("/game")
+        .header("Authorization", "*");
+
+    mockMvc.perform(postRequest).andExpect(status().isCreated())
+      .andExpect(jsonPath("$.gameSessionId", is(gameSession.getId().intValue())))
+      .andExpect(jsonPath("$.gameToken", is(gameSession.getGameToken())));
+  }
 
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
