@@ -147,8 +147,16 @@ public class AppController {
     }
     // retrieve user from authToken
     User user = appService.getUserByToken(authToken);
-    // add the user to the game session
+    // check if game token is valid
+    if (!appService.isGameTokenValid(gameToken)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+    }
     GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    // check game session state is waiting for players
+    if (gameSession.getCurrentState() != GameSession.GameState.WAITING_FOR_PLAYERS) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is not accepting players");
+    }
+    // add the user to the game session
     appService.addToGameSession(user, gameSession);
     // return the game session
     GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);

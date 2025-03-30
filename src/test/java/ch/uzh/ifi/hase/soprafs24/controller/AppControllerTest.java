@@ -211,6 +211,7 @@ public class AppControllerTest {
     gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
 
     given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
     given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
     given(appService.getGameSessionByGameToken(Mockito.any())).willReturn(gameSession);
 
@@ -231,6 +232,48 @@ public class AppControllerTest {
     mockMvc.perform(postRequest).andExpect(status().isUnauthorized());
   }
 
+  @Test
+  public void joinGameSession_gameSessionNotFound() throws Exception {
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.isGameTokenValid(Mockito.anyString())).willReturn(false);
+    MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
+        .header("Authorization", "*");
+    mockMvc.perform(postRequest).andExpect(status().isNotFound());
+  }
+
+  @Test
+  public void joinGameSession_gameNotJoinable() throws Exception {
+      // given a GameSession object not in waiting state
+    GameSession gameSession = new GameSession();
+    gameSession.setId(1L);
+    gameSession.setCurrentState(GameSession.GameState.VOTING);
+
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.getGameSessionByGameToken(Mockito.any())).willReturn(gameSession);
+    MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
+        .header("Authorization", "*");
+    mockMvc.perform(postRequest).andExpect(status().isForbidden());
+  }
+
+  @Test
+  public void joinGameSession_gameFull() throws Exception {
+    // given a GameSession object
+    GameSession gameSession = new GameSession();
+    // given a user
+    User user = new User();
+
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.getGameSessionByGameToken(Mockito.any())).willReturn(gameSession);
+    given(appService.getUserByToken(Mockito.any())).willReturn(user);
+    given(appService.addToGameSession(Mockito.any(), Mockito.any())).willThrow(
+      new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is full")
+    );
+    MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
+        .header("Authorization", "*");
+    mockMvc.perform(postRequest).andExpect(status().isForbidden());
+  }
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
    * can be processed

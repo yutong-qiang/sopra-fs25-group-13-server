@@ -15,4 +15,5 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findByUser(User user);
     List<Player> findByGameSession(GameSession gameSession);
     Optional<Player> findByUserAndGameSession(User user, GameSession gameSession);
+    boolean existsByUserAndGameSession(User user, GameSession gameSession);
 }

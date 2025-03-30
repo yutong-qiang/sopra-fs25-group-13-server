@@ -165,10 +165,20 @@ public class AppService {
 
   // add user to game session, making them a player
   public Player addToGameSession(User participant, GameSession gameSession) {
-    // TODO: check that operation is allowed
-    // e.g. user not already in game session, game session not full, etc.
+    // if user is already a player in the game session, return it
+    Player player = playerRepository.findByUserAndGameSession(participant, gameSession)
+                                    .orElse(null);
+    if (player != null) {
+      return player;
+    }
+    // get list of players in game session
+    List<Player> players = playerRepository.findByGameSession(gameSession);
+    // check that the game is not full
+    if (players.size() >= 8) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is full");
+    }
     // create player entity
-    Player player = new Player();
+    player = new Player();
     player.setUser(participant);
     player.setGameSession(gameSession);
     // save the changes to the game session
