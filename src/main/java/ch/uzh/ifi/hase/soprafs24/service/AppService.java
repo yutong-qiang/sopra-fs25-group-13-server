@@ -143,7 +143,9 @@ public class AppService {
 
   // get game session by game token
   public GameSession getGameSessionByGameToken(String gameToken){
-    return gameSessionRepository.findByGameToken(gameToken).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+    return gameSessionRepository.findByGameToken(gameToken).orElseThrow(
+      () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found")
+    );
   }
 
   //// createGameSession ////

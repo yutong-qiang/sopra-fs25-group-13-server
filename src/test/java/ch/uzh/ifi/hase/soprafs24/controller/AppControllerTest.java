@@ -193,6 +193,44 @@ public class AppControllerTest {
       .andExpect(jsonPath("$.gameToken", is(gameSession.getGameToken())));
   }
 
+
+  @Test
+  public void joinGameSession_success() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setName("Test User");
+    user.setUsername("testUsername");
+    user.setToken("1");
+
+    // given a GameSession object
+    GameSession gameSession = new GameSession();
+    gameSession.setId(1L);
+    gameSession.setCreator(user);
+    gameSession.setGameToken("abc123");
+    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+    given(appService.getGameSessionByGameToken(Mockito.any())).willReturn(gameSession);
+
+    MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
+        .header("Authorization", "*");
+
+    mockMvc.perform(postRequest).andExpect(status().isOk())
+      .andExpect(jsonPath("$.gameSessionId", is(gameSession.getId().intValue())))
+      .andExpect(jsonPath("$.gameToken", is(gameSession.getGameToken())));
+  }
+
+
+  @Test
+  public void joinGameSession_unauthorizedUser() throws Exception {
+    given(appService.isUserTokenValid(Mockito.anyString())).willReturn(false);
+    MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
+        .header("Authorization", "*");
+    mockMvc.perform(postRequest).andExpect(status().isUnauthorized());
+  }
+
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
    * can be processed

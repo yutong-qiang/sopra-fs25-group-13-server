@@ -9,12 +9,14 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -127,6 +129,26 @@ public class AppController {
     // create game session
     GameSession gameSession = appService.createGameSession(user);
     // add the user to the game session
+    appService.addToGameSession(user, gameSession);
+    // return the game session
+    GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
+    return gameSessionGetDTO;
+  }
+
+  /////////////// join game session ////////////////////////
+  @PostMapping("/game/join/{gameToken}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public GameSessionGetDTO joinGameSession(@RequestHeader("Authorization") String authToken, 
+                              @PathVariable("gameToken") String gameToken) {
+    // verify authToken
+    if (!appService.isUserTokenValid(authToken)) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+    }
+    // retrieve user from authToken
+    User user = appService.getUserByToken(authToken);
+    // add the user to the game session
+    GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
     appService.addToGameSession(user, gameSession);
     // return the game session
     GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
