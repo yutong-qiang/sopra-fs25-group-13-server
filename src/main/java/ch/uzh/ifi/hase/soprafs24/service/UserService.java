@@ -1,7 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +30,10 @@ public class UserService {
 
   private final Logger log = LoggerFactory.getLogger(UserService.class);
 
-  private final UserRepository userRepository;
+  private final AppRepository userRepository;
 
   @Autowired
-  public UserService(UserRepository userRepository) {
+  public UserService(AppRepository userRepository) {
     this.userRepository = userRepository;
   }
 

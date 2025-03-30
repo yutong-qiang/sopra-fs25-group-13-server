@@ -35,8 +35,8 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
  * request without actually sending them over the network.
  * This tests if the UserController works.
  */
-@WebMvcTest(UserController.class)
-public class UserControllerTest {
+@WebMvcTest(AppController.class)
+public class AppControllerTest {
 
   @Autowired
   private MockMvc mockMvc;
@@ -163,10 +163,6 @@ public class UserControllerTest {
     mockMvc.perform(postRequest)
         .andExpect(status().isUnauthorized());
   }
-
-
-
-
 
 
   /**

@@ -29,11 +29,11 @@ import java.util.UUID;
  * UserService and finally return the result.
  */
 @RestController
-public class UserController {
+public class AppController {
 
   private final UserService userService;
 
-  UserController(UserService userService) {
+  AppController(UserService userService) {
     this.userService = userService;
   }
 
@@ -52,7 +52,7 @@ public class UserController {
     return userGetDTOs;
   }
 
-  @PostMapping("/users")
+  @PostMapping("/register")
   @ResponseStatus(HttpStatus.CREATED)
   @ResponseBody
   public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
@@ -90,23 +90,23 @@ public class UserController {
   }
 
 
-  @PostMapping("/logout")
-  @ResponseStatus(HttpStatus.OK)
-  @ResponseBody
+  // @PostMapping("/logout")
+  // @ResponseStatus(HttpStatus.OK)
+  // @ResponseBody
 
-  /////////////previous code for logout///////////////////////
-  public ResponseEntity<Map<String, String>> logoutUser(HttpServletRequest request){
-    String token = request.getHeader("Authorization");
+  // /////////////previous code for logout///////////////////////
+  // public ResponseEntity<Map<String, String>> logoutUser(HttpServletRequest request){
+  //   String token = request.getHeader("Authorization");
 
-    if (token == null) {
-      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
-    }
+  //   if (token == null) {
+  //     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+  //   }
 
-    userService.logoutUser(request);
+  //   userService.logoutUser(request);
 
-    Map<String, String> response = new HashMap<>();
-    response.put("message", "User logged out successfully");
-    return ResponseEntity.ok(response);
+  //   Map<String, String> response = new HashMap<>();
+  //   response.put("message", "User logged out successfully");
+  //   return ResponseEntity.ok(response);
 
-  }
+  // }
 }

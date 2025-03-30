@@ -2,7 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 // import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -13,10 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class UserServiceTest {
+public class AppServiceTest {
 
   @Mock
-  private UserRepository userRepository;
+  private AppRepository userRepository;
 
   @InjectMocks
   private UserService userService;
