@@ -1,6 +1,19 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 // import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+// import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.UserDTOMapper;
+import ch.uzh.ifi.hase.soprafs24.service.AppService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import javax.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +36,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.UserDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.GameDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
 
@@ -55,7 +68,7 @@ public class AppController {
 
     // convert each user to the API representation
     for (User user : users) {
-      userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
+      userGetDTOs.add(UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
     }
     return userGetDTOs;
   }
@@ -65,12 +78,12 @@ public class AppController {
   @ResponseBody
   public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
     // convert API user to internal representation
-    User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+    User userInput = UserDTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
 
     // create user
     User createdUser = appService.createUser(userInput);
     // convert internal representation of user back to API
-    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
+    return UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
   }
 
   @PostMapping("/login")
@@ -98,24 +111,23 @@ public class AppController {
   }
 
 
-  // @PostMapping("/logout")
-  // @ResponseStatus(HttpStatus.OK)
-  // @ResponseBody
+  @PostMapping("/logout")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
 
-  // /////////////previous code for logout///////////////////////
-  // public ResponseEntity<Map<String, String>> logoutUser(HttpServletRequest request){
-  //   String token = request.getHeader("Authorization");
+  public ResponseEntity<Map<String, String>> logoutUser(HttpServletRequest request){
+    String token = request.getHeader("Authorization");
 
-  //   if (token == null) {
-  //     throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
-  //   }
+    if (token == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+    }
 
-  //   userService.logoutUser(request);
+    appService.logoutUser(request);
 
-  //   Map<String, String> response = new HashMap<>();
-  //   response.put("message", "User logged out successfully");
-  //   return ResponseEntity.ok(response);
-
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "User logged out successfully");
+    return ResponseEntity.ok(response);
+  }
   // }
 
 

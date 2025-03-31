@@ -13,7 +13,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
 
 /**
  * Test class for the UserResource REST resource.
@@ -24,29 +24,30 @@ import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 @SpringBootTest
 public class AppServiceIntegrationTest {
 
-  @Qualifier("userRepository")
+  @Qualifier("appRepository")
   @Autowired
-  private UserRepository userRepository;
+  private AppRepository appRepository;
 
   @Autowired
-  private AppService userService;
+  private AppService appService;
 
   @BeforeEach
   public void setup() {
-    userRepository.deleteAll();
+    appRepository.deleteAll();
   }
 
   @Test
   public void createUser_validInputs_success() {
     // given
-    assertNull(userRepository.findByUsername("testUsername"));
+    assertNull(appRepository.findByUsername("testUsername"));
 
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
+    testUser.setPassword("testPassword");
 
     // when
-    User createdUser = userService.createUser(testUser);
+    User createdUser = appService.createUser(testUser);
 
     // then
     assertEquals(testUser.getId(), createdUser.getId());
@@ -57,12 +58,13 @@ public class AppServiceIntegrationTest {
 
   @Test
   public void createUser_duplicateUsername_throwsException() {
-    assertNull(userRepository.findByUsername("testUsername"));
+    assertNull(appRepository.findByUsername("testUsername"));
 
     User testUser = new User();
     testUser.setName("testName");
     testUser.setUsername("testUsername");
-    User createdUser = userService.createUser(testUser);
+    testUser.setPassword("testPassword");
+    User createdUser = appService.createUser(testUser);
 
     // attempt to create second user with same username
     User testUser2 = new User();
@@ -70,8 +72,9 @@ public class AppServiceIntegrationTest {
     // change the name but forget about the username
     testUser2.setName("testName2");
     testUser2.setUsername("testUsername");
+    testUser2.setPassword("testPassword2");
 
     // check that an error is thrown
-    assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));
+    assertThrows(ResponseStatusException.class, () -> appService.createUser(testUser2));
   }
 }

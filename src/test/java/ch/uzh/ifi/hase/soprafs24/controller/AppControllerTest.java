@@ -83,7 +83,7 @@ public class AppControllerTest {
     given(appService.createUser(Mockito.any())).willReturn(user);
 
     // when/then -> do the request + validate the result
-    MockHttpServletRequestBuilder postRequest = post("/users")
+    MockHttpServletRequestBuilder postRequest = post("/register")
         .contentType(MediaType.APPLICATION_JSON)
         .content(asJsonString(userPostDTO));
 
@@ -107,7 +107,7 @@ public class AppControllerTest {
         .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is already taken!"));
 
     // when/then -> do the request + validate the result
-    MockHttpServletRequestBuilder postRequest = post("/users")
+    MockHttpServletRequestBuilder postRequest = post("/register")
         .contentType(MediaType.APPLICATION_JSON)
         .content(asJsonString(userPostDTO));
 
@@ -162,6 +162,22 @@ public class AppControllerTest {
     // then
     mockMvc.perform(postRequest)
         .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  public void logoutUser_success() throws Exception {
+    // given
+    String token = "test-token";
+
+    // when/then -> do the request + validate the result
+    MockHttpServletRequestBuilder postRequest = post("/logout")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", token);
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.message", is("User logged out successfully")));
   }
 
 

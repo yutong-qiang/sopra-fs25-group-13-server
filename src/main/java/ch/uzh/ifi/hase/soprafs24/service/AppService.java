@@ -18,7 +18,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
 
 /**
  * App Service
@@ -33,12 +33,12 @@ public class AppService {
 
   private final Logger log = LoggerFactory.getLogger(AppService.class);
 
-  private final UserRepository userRepository;
+  private final AppRepository userRepository;
   private final GameSessionRepository gameSessionRepository;
   private final PlayerRepository playerRepository;
 
   @Autowired
-  public AppService(UserRepository userRepository,
+  public AppService(AppRepository userRepository,
                     GameSessionRepository gameSessionRepository,
                     PlayerRepository playerRepository) {
     this.userRepository = userRepository;
@@ -56,13 +56,11 @@ public class AppService {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
     }
 
-///////if a login user doesnt have a token, generate it for the person
     if (user.getToken() == null || user.getToken().isEmpty()){
       String token = UUID.randomUUID().toString();
       user.setToken(token);
       userRepository.save(user);
     }
-/////////////////////////////////////////////////////////////
     userRepository.save(user);
     return user;
   }

@@ -16,7 +16,7 @@ public class AppRepositoryIntegrationTest {
   private TestEntityManager entityManager;
 
   @Autowired
-  private UserRepository userRepository;
+  private AppRepository appRepository;
 
   @Test
   public void findByName_success() {
@@ -24,13 +24,14 @@ public class AppRepositoryIntegrationTest {
     User user = new User();
     user.setName("Firstname Lastname");
     user.setUsername("firstname@lastname");
+    user.setPassword("password");
     user.setToken("1");
 
     entityManager.persist(user);
     entityManager.flush();
 
     // when
-    User found = userRepository.findByName(user.getName());
+    User found = appRepository.findByName(user.getName());
 
     // then
     assertNotNull(found.getId());
