@@ -19,6 +19,8 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
+import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
+
 
 /**
  * App Service
@@ -36,14 +38,18 @@ public class AppService {
   private final AppRepository userRepository;
   private final GameSessionRepository gameSessionRepository;
   private final PlayerRepository playerRepository;
+  private final TwilioService twilioService;
+
 
   @Autowired
   public AppService(AppRepository userRepository,
                     GameSessionRepository gameSessionRepository,
-                    PlayerRepository playerRepository) {
+                    PlayerRepository playerRepository,
+                    TwilioService twilioService) {
     this.userRepository = userRepository;
     this.gameSessionRepository = gameSessionRepository;
     this.playerRepository = playerRepository;
+    this.twilioService = twilioService;
   }
 
   public List<User> getUsers() {
@@ -153,6 +159,9 @@ public class AppService {
     gameSession.setCreator(creator);
     gameSession.setGameToken(UUID.randomUUID().toString());
     gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+
+    String roomSid = twilioService.createVideoRoom(gameSession.getGameToken());
+    gameSession.setTwilioRoomSid(roomSid);
     // save the new game session
     gameSession = gameSessionRepository.save(gameSession);
     // flush the changes to the database
@@ -186,5 +195,53 @@ public class AppService {
     // return the player object
     return player;
   }
+  public void removeFromGameSession(User user, GameSession gameSession) {
+    Player player = playerRepository.findByUserAndGameSession(user, gameSession)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found in game session"));
+    
+    if (user.equals(gameSession.getCreator())) {
+        // Close video room first as admin is leaving
+        twilioService.closeVideoRoom(gameSession.getTwilioRoomSid());
+        // Delete all players
+        List<Player> allPlayers = playerRepository.findByGameSession(gameSession);
+        playerRepository.deleteAll(allPlayers);
+        // Delete game session
+        gameSessionRepository.delete(gameSession);
+        gameSessionRepository.flush();
+        return;
+    }
+    playerRepository.delete(player);
+    playerRepository.flush();
+  }
+
+
+  //   // Check if this was the last player or if the admin left
+  //   List<Player> remainingPlayers = playerRepository.findByGameSession(gameSession);
+  //   if (remainingPlayers.isEmpty() || user.equals(gameSession.getCreator())) {
+  //       // Close video room
+  //       twilioService.closeVideoRoom(gameSession.getTwilioRoomSid());
+  //       // Delete game session
+  //       gameSessionRepository.delete(gameSession);
+  //       gameSessionRepository.flush();
+  //   }
+  // }
+
+  public void endGameSession(String gameToken, User admin) {
+    GameSession gameSession = getGameSessionByGameToken(gameToken);
+    if (!gameSession.getCreator().equals(admin)) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can end the game");
+    }
+    
+    // Close video room
+    twilioService.closeVideoRoom(gameSession.getTwilioRoomSid());
+
+    List<Player> players = playerRepository.findByGameSession(gameSession);
+    playerRepository.deleteAll(players);
+    
+    // Delete game session
+    gameSessionRepository.delete(gameSession);
+    gameSessionRepository.flush();
+  }
+
 
 }

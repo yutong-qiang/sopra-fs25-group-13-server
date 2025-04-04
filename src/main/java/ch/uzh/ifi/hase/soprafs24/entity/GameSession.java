@@ -31,6 +31,9 @@ public class GameSession implements Serializable {
     @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
 
+    @Column(nullable = true)
+    private String twilioRoomSid;
+
     @Column(nullable = true) // must be changed later
     private String twilioVideoChatToken;
 
@@ -90,6 +93,14 @@ public class GameSession implements Serializable {
 
     public void setTwilioVideoChatToken(String twilioVideoChatToken) {
         this.twilioVideoChatToken = twilioVideoChatToken;
+    }
+
+    public String getTwilioRoomSid() {
+        return twilioRoomSid;
+    }
+
+    public void setTwilioRoomSid(String twilioRoomSid) {
+        this.twilioRoomSid = twilioRoomSid;
     }
 
     public GameState getCurrentState() {

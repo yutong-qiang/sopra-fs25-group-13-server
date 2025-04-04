@@ -147,6 +147,21 @@ public class AppController {
     return gameSessionGetDTO;
   }
 
+  @DeleteMapping("/game/{gameToken}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @ResponseBody
+  public void endGameSession(@PathVariable String gameToken,
+                             @RequestHeader("Authorization") String authToken) {
+        // verify authToken
+    if (!appService.isUserTokenValid(authToken)) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+    }
+        // get user      
+    User user = appService.getUserByToken(authToken);
+        // end game session
+    appService.endGameSession(gameToken, user);
+    }
+
   /////////////// join game session ////////////////////////
   @PostMapping("/game/join/{gameToken}")
   @ResponseStatus(HttpStatus.OK)
