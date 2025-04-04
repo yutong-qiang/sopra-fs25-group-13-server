@@ -18,8 +18,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
-import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 
 /**
@@ -35,14 +34,14 @@ public class AppService {
 
   private final Logger log = LoggerFactory.getLogger(AppService.class);
 
-  private final AppRepository userRepository;
+  private final UserRepository userRepository;
   private final GameSessionRepository gameSessionRepository;
   private final PlayerRepository playerRepository;
   private final TwilioService twilioService;
 
 
   @Autowired
-  public AppService(AppRepository userRepository,
+  public AppService(UserRepository userRepository,
                     GameSessionRepository gameSessionRepository,
                     PlayerRepository playerRepository,
                     TwilioService twilioService) {

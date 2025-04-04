@@ -10,13 +10,13 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 @DataJpaTest
-public class AppRepositoryIntegrationTest {
+public class UserRepositoryIntegrationTest {
 
   @Autowired
   private TestEntityManager entityManager;
 
   @Autowired
-  private AppRepository appRepository;
+  private UserRepository userRepository;
 
   @Test
   public void findByName_success() {
@@ -31,7 +31,7 @@ public class AppRepositoryIntegrationTest {
     entityManager.flush();
 
     // when
-    User found = appRepository.findByName(user.getName());
+    User found = userRepository.findByName(user.getName());
 
     // then
     assertNotNull(found.getId());

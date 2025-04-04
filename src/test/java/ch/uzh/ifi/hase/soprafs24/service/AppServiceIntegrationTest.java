@@ -13,7 +13,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 /**
  * Test class for the UserResource REST resource.
@@ -24,22 +24,22 @@ import ch.uzh.ifi.hase.soprafs24.repository.AppRepository;
 @SpringBootTest
 public class AppServiceIntegrationTest {
 
-  @Qualifier("appRepository")
+  @Qualifier("userRepository")
   @Autowired
-  private AppRepository appRepository;
+  private UserRepository userRepository;
 
   @Autowired
   private AppService appService;
 
   @BeforeEach
   public void setup() {
-    appRepository.deleteAll();
+    userRepository.deleteAll();
   }
 
   @Test
   public void createUser_validInputs_success() {
     // given
-    assertNull(appRepository.findByUsername("testUsername"));
+    assertNull(userRepository.findByUsername("testUsername"));
 
     User testUser = new User();
     testUser.setName("testName");
@@ -58,7 +58,7 @@ public class AppServiceIntegrationTest {
 
   @Test
   public void createUser_duplicateUsername_throwsException() {
-    assertNull(appRepository.findByUsername("testUsername"));
+    assertNull(userRepository.findByUsername("testUsername"));
 
     User testUser = new User();
     testUser.setName("testName");
