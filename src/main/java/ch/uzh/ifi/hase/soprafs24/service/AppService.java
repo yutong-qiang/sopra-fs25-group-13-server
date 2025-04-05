@@ -3,8 +3,6 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +17,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 
 
 /**
@@ -70,16 +69,15 @@ public class AppService {
     return user;
   }
 
-  public User logoutUser(HttpServletRequest request){
-    String token = request.getHeader("Authorization");
+  public void logoutUser(String token){
     if (token == null){
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
     }
-    User user = userRepository.findByToken(token).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    User user = userRepository.findByToken(token)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     
     user.setToken(null);
     userRepository.save(user);
-    return user;
   }
 
   public User createUser(User newUser) {
@@ -106,17 +104,16 @@ public class AppService {
    */
   private void checkIfUserExists(User userToBeCreated) {
     User userByUsername = userRepository.findByUsername(userToBeCreated.getUsername());
-    User userByName = userRepository.findByName(userToBeCreated.getName());
+    // User userByName = userRepository.findByName(userToBeCreated.getName());
 
     String baseErrorMessage = "The %s provided %s not unique. Therefore, the user could not be created!";
-    if (userByUsername != null && userByName != null) {
+    if (userByUsername != null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
           String.format(baseErrorMessage, "username and the name", "are"));
-    } else if (userByUsername != null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(baseErrorMessage, "username", "is"));
-    } else if (userByName != null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(baseErrorMessage, "name", "is"));
     }
+    // else if (userByName != null) {
+    //   throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(baseErrorMessage, "name", "is"));
+    // }
   }
 
   public User getUserById(Long id){
@@ -157,7 +154,7 @@ public class AppService {
     GameSession gameSession = new GameSession();
     gameSession.setCreator(creator);
     gameSession.setGameToken(UUID.randomUUID().toString());
-    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+    gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
     String roomSid = twilioService.createVideoRoom(gameSession.getGameToken());
     gameSession.setTwilioRoomSid(roomSid);
@@ -242,5 +239,31 @@ public class AppService {
     gameSessionRepository.flush();
   }
 
+  // public GameSession startGame(String gameToken, User user) {
+  //   GameSession gameSession = getGameSessionByGameToken(gameToken);
+    
+  //   // Check if user is the creator/admin
+  //   if (!gameSession.getCreator().equals(user)) {
+  //       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can start the game");
+  //   }
+    
+  //   // Check if game is in correct state
+  //   if (gameSession.getCurrentState() != GameState.WAITING_FOR_PLAYERS) {
+  //       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game cannot be started in current state");
+  //   }
+    
+  //   // Check if enough players (minimum 2 players)
+  //   List<Player> players = playerRepository.findByGameSession(gameSession);
+  //   if (players.size() < 2) {
+  //       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough players to start the game");
+  //   }
+    
+  //   // Change state to STARTING
+  //   gameSession.setCurrentState(GameState.STARTING);
+  //   gameSessionRepository.save(gameSession);
+  //   gameSessionRepository.flush();
+    
+  //   return gameSession;
+  // }
 
 }

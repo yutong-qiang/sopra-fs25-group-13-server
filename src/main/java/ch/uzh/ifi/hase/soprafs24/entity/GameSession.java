@@ -13,6 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 
 @Entity
 @Table(name = "GameSession")
@@ -24,7 +25,7 @@ public class GameSession implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String gameToken;
 
     @ManyToOne
@@ -40,11 +41,11 @@ public class GameSession implements Serializable {
     @Column(nullable = true)
     private GameState currentState;
 
-    public enum GameState {
-        WAITING_FOR_PLAYERS,
-        VOTING,
-        FINISHED
-    }
+    // public enum GameState {
+    //     WAITING_FOR_PLAYERS,
+    //     VOTING,
+    //     FINISHED
+    // }
 
     @Column(nullable = true)
     private String secretWord; //secret word to be given to non-chameleon players

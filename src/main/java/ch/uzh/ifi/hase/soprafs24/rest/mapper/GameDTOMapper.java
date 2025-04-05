@@ -26,5 +26,6 @@ public interface GameDTOMapper {
 
   @Mapping(source = "id", target = "gameSessionId")
   @Mapping(source = "gameToken", target = "gameToken")
+  @Mapping(source = "twilioRoomSid", target = "twilioRoomSid")
   GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession);
 }

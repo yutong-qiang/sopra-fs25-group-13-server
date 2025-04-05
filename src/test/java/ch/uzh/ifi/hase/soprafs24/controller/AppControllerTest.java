@@ -7,6 +7,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.mockito.Mockito.verify;
+
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -28,6 +31,8 @@ import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
+import ch.uzh.ifi.hase.soprafs24.constant.GameState;
+import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
 
 /**
  * UserControllerTest
@@ -44,11 +49,14 @@ public class AppControllerTest {
   @MockBean
   private AppService appService;
 
+  @MockBean
+  private TwilioService twilioService;
+
   @Test
   public void givenUsers_whenGetUsers_thenReturnJsonArray() throws Exception {
     // given
     User user = new User();
-    user.setName("Firstname Lastname");
+    // user.setName("Firstname Lastname");
     user.setUsername("firstname@lastname");
 
     List<User> allUsers = Collections.singletonList(user);
@@ -63,7 +71,7 @@ public class AppControllerTest {
     // then
     mockMvc.perform(getRequest).andExpect(status().isOk())
         .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].name", is(user.getName())))
+        // .andExpect(jsonPath("$[0].name", is(user.getName())))
         .andExpect(jsonPath("$[0].username", is(user.getUsername())));
   }
 
@@ -72,12 +80,12 @@ public class AppControllerTest {
     // given
     User user = new User();
     user.setId(1L);
-    user.setName("Test User");
+    // user.setName("Test User");
     user.setUsername("testUsername");
     user.setToken("1");
 
     UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setName("Test User");
+    // userPostDTO.setName("Test User");
     userPostDTO.setUsername("testUsername");
 
     given(appService.createUser(Mockito.any())).willReturn(user);
@@ -91,7 +99,7 @@ public class AppControllerTest {
     mockMvc.perform(postRequest)
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", is(user.getId().intValue())))
-        .andExpect(jsonPath("$.name", is(user.getName())))
+        // .andExpect(jsonPath("$.name", is(user.getName())))
         .andExpect(jsonPath("$.username", is(user.getUsername())));
   }
 
@@ -99,7 +107,7 @@ public class AppControllerTest {
   public void createUser_duplicateUsername_throwsException() throws Exception {
     // given
     UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setName("Firstname Lastname");
+    // userPostDTO.setName("Firstname Lastname");
     userPostDTO.setUsername("firstname@lastname");
     userPostDTO.setPassword("password");
 
@@ -122,7 +130,7 @@ public class AppControllerTest {
     // given
     User user = new User();
     user.setId(1L);
-    user.setName("Test User");
+    // user.setName("Test User");
     user.setUsername("testUsername");
     user.setToken("1");
 
@@ -176,8 +184,22 @@ public class AppControllerTest {
 
     // then
     mockMvc.perform(postRequest)
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.message", is("User logged out successfully")));
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  public void logoutUser_invalidSession() throws Exception {
+    String token = "invalid-token";
+
+    Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session"))
+    .when(appService).logoutUser(token);
+
+    MockHttpServletRequestBuilder postRequest = post("/logout")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", token);
+
+    mockMvc.perform(postRequest)
+        .andExpect(status().isUnauthorized());
   }
 
 
@@ -186,7 +208,7 @@ public class AppControllerTest {
     // given
     User user = new User();
     user.setId(1L);
-    user.setName("Test User");
+    // user.setName("Test User");
     user.setUsername("testUsername");
     user.setToken("1");
 
@@ -195,7 +217,7 @@ public class AppControllerTest {
     gameSession.setId(1L);
     gameSession.setCreator(user);
     gameSession.setGameToken("abc123");
-    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+    gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
     given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
     given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
@@ -215,7 +237,7 @@ public class AppControllerTest {
     // given
     User user = new User();
     user.setId(1L);
-    user.setName("Test User");
+    // user.setName("Test User");
     user.setUsername("testUsername");
     user.setToken("1");
 
@@ -224,7 +246,7 @@ public class AppControllerTest {
     gameSession.setId(1L);
     gameSession.setCreator(user);
     gameSession.setGameToken("abc123");
-    gameSession.setCurrentState(GameSession.GameState.WAITING_FOR_PLAYERS);
+    gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
     given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
     given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
@@ -250,8 +272,18 @@ public class AppControllerTest {
 
   @Test
   public void joinGameSession_gameSessionNotFound() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("testUser");
+    user.setToken("*");
+
     given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+    given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
     given(appService.isGameTokenValid(Mockito.anyString())).willReturn(false);
+    given(appService.getGameSessionByGameToken(Mockito.anyString()))
+        .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+    
     MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
         .header("Authorization", "*");
     mockMvc.perform(postRequest).andExpect(status().isNotFound());
@@ -262,7 +294,7 @@ public class AppControllerTest {
       // given a GameSession object not in waiting state
     GameSession gameSession = new GameSession();
     gameSession.setId(1L);
-    gameSession.setCurrentState(GameSession.GameState.VOTING);
+    gameSession.setCurrentState(GameState.VOTING);
 
     given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
     given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
@@ -290,6 +322,62 @@ public class AppControllerTest {
         .header("Authorization", "*");
     mockMvc.perform(postRequest).andExpect(status().isForbidden());
   }
+
+  @Test
+  public void createGameSession_withTwilio_success() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("testUser");
+    user.setToken("testToken");
+
+    GameSession gameSession = new GameSession();
+    gameSession.setId(1L);
+    gameSession.setCreator(user);
+    gameSession.setGameToken("testGameToken");
+    gameSession.setTwilioRoomSid("RM123456789");
+    gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
+
+    given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+    given(appService.createGameSession(Mockito.any())).willReturn(gameSession);
+
+    // when/then
+    MockHttpServletRequestBuilder postRequest = post("/game")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", "testToken");
+
+    mockMvc.perform(postRequest)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.gameSessionId", is(gameSession.getId().intValue())))
+        .andExpect(jsonPath("$.gameToken", is(gameSession.getGameToken())))
+        .andExpect(jsonPath("$.twilioRoomSid", is(gameSession.getTwilioRoomSid())));
+  }
+
+  @Test
+  public void endGameSession_withTwilio_success() throws Exception {
+    // given
+    String gameToken = "testGameToken";
+    String authToken = "testAuthToken";
+
+    User creator = new User();
+    creator.setId(1L);
+    creator.setUsername("testUser");
+    creator.setToken(authToken);
+
+    given(appService.isUserTokenValid(authToken)).willReturn(true);
+    given(appService.getUserByToken(authToken)).willReturn(creator);
+
+    // when/then
+    MockHttpServletRequestBuilder deleteRequest = delete("/game/" + gameToken)
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", authToken);
+
+    mockMvc.perform(deleteRequest)
+        .andExpect(status().isNoContent());
+
+    verify(appService).endGameSession(gameToken, creator);
+  }
+
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
    * can be processed

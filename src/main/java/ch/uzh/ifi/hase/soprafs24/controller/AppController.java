@@ -30,6 +30,8 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.GameDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.UserDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
+import ch.uzh.ifi.hase.soprafs24.constant.GameState;
+import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
 
 /**
  * App Controller
@@ -43,9 +45,11 @@ import ch.uzh.ifi.hase.soprafs24.service.AppService;
 public class AppController {
 
   private final AppService appService;
+  private final TwilioService twilioService;
 
-  public AppController(AppService appService) {
+  public AppController(AppService appService, TwilioService twilioService) {
     this.appService = appService;
+    this.twilioService = twilioService;
   }
 
   @GetMapping("/users")
@@ -79,7 +83,7 @@ public class AppController {
   @PostMapping("/login")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
-  public Map<String, Object> loginUser(@RequestBody UserPostDTO userPostDTO) {
+  public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
     //// only get username and password ////////
     User loggedInUser = appService.loginUser(userPostDTO.getUsername(), userPostDTO.getPassword());
 
@@ -90,14 +94,8 @@ public class AppController {
       loggedInUser.setToken(token);
     }
 
-    // Create response object with token
-    Map<String, Object> response = new HashMap<>();
-    response.put("token", token);
-    response.put("id", loggedInUser.getId());
-    response.put("username", loggedInUser.getUsername());
-    response.put("name", loggedInUser.getName());
 
-    return response;
+    return UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
   }
 
 
@@ -105,18 +103,14 @@ public class AppController {
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
 
-  public ResponseEntity<Map<String, String>> logoutUser(HttpServletRequest request){
-    String token = request.getHeader("Authorization");
+  public void logoutUser(@RequestHeader("Authorization") String token){
 
     if (token == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
     }
 
-    appService.logoutUser(request);
+    appService.logoutUser(token);
 
-    Map<String, String> response = new HashMap<>();
-    response.put("message", "User logged out successfully");
-    return ResponseEntity.ok(response);
   }
   // }
 
@@ -137,6 +131,7 @@ public class AppController {
     return gameSessionGetDTO;
   }
 
+  ////////////////////// end game session ////////////////////////
   @DeleteMapping("/game/{gameToken}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @ResponseBody
@@ -151,6 +146,7 @@ public class AppController {
         // end game session
     appService.endGameSession(gameToken, user);
     }
+
 
   /////////////// join game session ////////////////////////
   @PostMapping("/game/join/{gameToken}")
@@ -170,7 +166,7 @@ public class AppController {
     }
     GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
     // check game session state is waiting for players
-    if (gameSession.getCurrentState() != GameSession.GameState.WAITING_FOR_PLAYERS) {
+    if (gameSession.getCurrentState() != GameState.WAITING_FOR_PLAYERS) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is not accepting players");
     }
     // add the user to the game session
@@ -180,4 +176,36 @@ public class AppController {
     return gameSessionGetDTO;
   }
   
+  
+/////////////////// start game ////////////////////////
+/// idk if we need this? 
+  // @PostMapping("/game/{gameToken}/start")
+  // @ResponseStatus(HttpStatus.OK)
+  // @ResponseBody
+  // public GameSessionGetDTO startGame(
+  //     @PathVariable String gameToken,
+  //     @RequestHeader("Authorization") String authToken
+  // ) {
+  //     // verify authToken
+  //     if (!appService.isUserTokenValid(authToken)) {
+  //         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+  //     }
+      
+  //     // get user
+  //     User user = appService.getUserByToken(authToken);
+      
+  //     // get game session
+  //     GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+      
+  //     // verify user is the creator/admin
+  //     if (!gameSession.getCreator().equals(user)) {
+  //         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can start the game");
+  //     }
+      
+  //     // start game
+  //     GameSession updatedGameSession = appService.startGame(gameToken, user);
+      
+  //     // convert and return updated game session
+  //     return GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(updatedGameSession);
+  // }
 }

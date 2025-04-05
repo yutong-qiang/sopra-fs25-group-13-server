@@ -42,7 +42,7 @@ public class AppServiceIntegrationTest {
     assertNull(userRepository.findByUsername("testUsername"));
 
     User testUser = new User();
-    testUser.setName("testName");
+    // testUser.setName("testName");
     testUser.setUsername("testUsername");
     testUser.setPassword("testPassword");
 
@@ -51,7 +51,7 @@ public class AppServiceIntegrationTest {
 
     // then
     assertEquals(testUser.getId(), createdUser.getId());
-    assertEquals(testUser.getName(), createdUser.getName());
+    // assertEquals(testUser.getName(), createdUser.getName());
     assertEquals(testUser.getUsername(), createdUser.getUsername());
     assertNotNull(createdUser.getToken());
   }
@@ -61,7 +61,7 @@ public class AppServiceIntegrationTest {
     assertNull(userRepository.findByUsername("testUsername"));
 
     User testUser = new User();
-    testUser.setName("testName");
+    // testUser.setName("testName");
     testUser.setUsername("testUsername");
     testUser.setPassword("testPassword");
     User createdUser = appService.createUser(testUser);
@@ -70,7 +70,7 @@ public class AppServiceIntegrationTest {
     User testUser2 = new User();
 
     // change the name but forget about the username
-    testUser2.setName("testName2");
+    // testUser2.setName("testName2");
     testUser2.setUsername("testUsername");
     testUser2.setPassword("testPassword2");
 
