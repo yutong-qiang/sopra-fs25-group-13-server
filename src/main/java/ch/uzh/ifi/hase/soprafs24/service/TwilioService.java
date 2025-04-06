@@ -4,21 +4,40 @@ import com.twilio.Twilio;
 import com.twilio.rest.video.v1.Room;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
+import org.springframework.web.server.ResponseStatusException;
+import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.http.HttpStatus;  // Change this import
+
+
+import com.twilio.jwt.accesstoken.AccessToken;
+import com.twilio.jwt.accesstoken.VideoGrant;
 
 // if we want to implement multiple rooms --> add a map here to match lobby name and unique id or sth....
 
 @Service
 public class TwilioService {
+    @Autowired
+    private GameSessionRepository gameSessionRepository;
 
     @Value("${twilio.account.sid}")
     private String accountSid;
 
     @Value("${twilio.auth.token}")
     private String authToken;
+    
+    @Value("${twilio.api.key}")
+    private String apiKey;
+
+    @Value("${twilio.api.secret}")
+    private String apiSecret;
+
+    public record TwilioRoomInfo(String roomSid, String token) {}
 
 
-    public String createVideoRoom(String gameToken) {
+    public TwilioRoomInfo createVideoRoom(String gameToken) {
         try{
         Twilio.init(accountSid, authToken);
         
@@ -29,18 +48,40 @@ public class TwilioService {
                 .setRecordParticipantsOnConnect(false)
                 .create();
         
-        System.out.println("Created Twilio room: " + room.getSid());
-        return room.getSid();
-        }  
+        String token = generateToken(gameToken, room.getSid());
+        System.out.println("Created Twilio room: " + room.getSid() + " with token: " + token);
         
-        catch (Exception e) {
+        return new TwilioRoomInfo(room.getSid(), token);
+        
+        } catch (Exception e) {
             System.out.println("Error creating Twilio room: " + e.getMessage());
-            return "RM" + UUID.randomUUID().toString().substring(0, 10);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+            "Failed to create video room: " + e.getMessage());
         }
         // String mockRoomSid = "RM" + UUID.randomUUID().toString().substring(0, 10);
         // System.out.println("Created mock video room: " + mockRoomSid);
         // return mockRoomSid;
     }
+
+    private String generateToken(String identity, String roomId) {
+        try{    
+        VideoGrant grant = new VideoGrant();
+        grant.setRoom(roomId);
+
+        AccessToken token = new AccessToken.Builder(accountSid, apiKey, apiSecret)
+        .identity(identity)
+        .grant(grant)
+        .build();
+
+        return token.toJwt();
+        }catch (Exception e) {
+            System.out.println("Error generating Twilio token: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, 
+            "Failed to generate video token: " + e.getMessage());
+        }
+    }
+
+            
 
     public void closeVideoRoom(String roomSid) {
         if (roomSid != null) {

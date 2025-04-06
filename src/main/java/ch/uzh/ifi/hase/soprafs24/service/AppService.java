@@ -156,14 +156,26 @@ public class AppService {
     gameSession.setGameToken(UUID.randomUUID().toString());
     gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
-    String roomSid = twilioService.createVideoRoom(gameSession.getGameToken());
-    gameSession.setTwilioRoomSid(roomSid);
-    // save the new game session
     gameSession = gameSessionRepository.save(gameSession);
-    // flush the changes to the database
+    TwilioService.TwilioRoomInfo twilioInfo = twilioService.createVideoRoom(gameSession.getGameToken());
+    
+    gameSession.setTwilioRoomSid(twilioInfo.roomSid());
+    gameSession.setTwilioVideoChatToken(twilioInfo.token());
+
+    gameSession = gameSessionRepository.save(gameSession);
     gameSessionRepository.flush();
-    // return the new game session
+
     return gameSession;
+
+    // TODO: implement twilio video chat
+    // String roomSid = twilioService.createVideoRoom(gameSession.getGameToken());
+    // gameSession.setTwilioRoomSid(roomSid);
+    // // save the new game session
+    // gameSession = gameSessionRepository.save(gameSession);
+    // // flush the changes to the database
+    // gameSessionRepository.flush();
+    // // return the new game session
+    // return gameSession;
   }
 
   // add user to game session, making them a player
@@ -237,6 +249,17 @@ public class AppService {
     // Delete game session
     gameSessionRepository.delete(gameSession);
     gameSessionRepository.flush();
+  }
+
+  public boolean isUserInGameSession(User user, GameSession gameSession) {
+    return playerRepository.findByUserAndGameSession(user, gameSession).isPresent();
+  }
+
+  public List<User> getGameSessionPlayers(GameSession gameSession) {
+    List<Player> players = playerRepository.findByGameSession(gameSession);
+    return players.stream()
+                 .map(Player::getUser)
+                 .toList();
   }
 
   // public GameSession startGame(String gameToken, User user) {

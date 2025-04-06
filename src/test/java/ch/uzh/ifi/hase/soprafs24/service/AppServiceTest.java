@@ -93,8 +93,10 @@ public class AppServiceTest {
     creator.setId(1L);
     creator.setUsername("testUser");
 
+    String mockTwilioToken = "mock_twilio_token_123";
+
     // Mock TwilioService
-    when(twilioService.createVideoRoom(anyString())).thenReturn("RM123456789");
+    when(twilioService.createVideoRoom(anyString())).thenReturn(new TwilioService.TwilioRoomInfo("RM123", mockTwilioToken));
     when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     // when
@@ -103,10 +105,11 @@ public class AppServiceTest {
     // then
     assertNotNull(createdSession);
     assertEquals(creator, createdSession.getCreator());
-    assertEquals("RM123456789", createdSession.getTwilioRoomSid());
+    assertEquals(mockTwilioToken, createdSession.getTwilioVideoChatToken());
+    assertEquals("RM123", createdSession.getTwilioRoomSid());
     assertEquals(GameState.WAITING_FOR_PLAYERS, createdSession.getCurrentState());
     verify(twilioService).createVideoRoom(createdSession.getGameToken());
-    verify(gameSessionRepository).save(any(GameSession.class));
+    verify(gameSessionRepository, Mockito.times(2)).save(any(GameSession.class));
     verify(gameSessionRepository).flush();
   }
 

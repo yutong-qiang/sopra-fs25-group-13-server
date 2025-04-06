@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 public class GameSessionGetDTO {
     private Long gameSessionId;
     private String gameToken;
+    private String twilioVideoChatToken;
     private String twilioRoomSid;
 
     public Long getGameSessionId() {
@@ -19,6 +20,14 @@ public class GameSessionGetDTO {
 
     public void setGameToken(String gameToken) {
         this.gameToken = gameToken;
+    }
+
+    public String getTwilioVideoChatToken() {
+        return twilioVideoChatToken;
+    }
+
+    public void setTwilioVideoChatToken(String twilioVideoChatToken) {
+        this.twilioVideoChatToken = twilioVideoChatToken;
     }
 
     public String getTwilioRoomSid() {

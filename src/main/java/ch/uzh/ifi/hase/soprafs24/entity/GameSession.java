@@ -35,7 +35,7 @@ public class GameSession implements Serializable {
     @Column(nullable = true)
     private String twilioRoomSid;
 
-    @Column(nullable = true) // must be changed later
+    @Column(nullable = true, length = 1000) 
     private String twilioVideoChatToken;
 
     @Column(nullable = true)
