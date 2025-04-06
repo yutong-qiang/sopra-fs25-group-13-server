@@ -67,7 +67,16 @@ public class AppController {
     return userGetDTOs;
   }
 
-  @PostMapping("/register")
+    @GetMapping("users/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public ResponseEntity<UserGetDTO> getUserById(@PathVariable Long id) {
+        User user = appService.getUserById(id);
+        return ResponseEntity.ok(UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
+    }
+
+
+    @PostMapping("/register")
   @ResponseStatus(HttpStatus.CREATED)
   @ResponseBody
   public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
