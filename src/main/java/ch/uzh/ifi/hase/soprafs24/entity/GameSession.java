@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 
 import javax.persistence.Column;
@@ -32,32 +31,21 @@ public class GameSession implements Serializable {
     @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
 
+    @ManyToOne
+    @JoinColumn(name = "current_player_id", nullable = false)
+    private Player currentPlayerTurn;
+
     @Column(nullable = true)
     private String twilioRoomSid;
 
-    @Column(nullable = true, length = 1000) 
+    @Column(nullable = true, length = 1000)
     private String twilioVideoChatToken;
 
     @Column(nullable = true)
     private GameState currentState;
 
-    // public enum GameState {
-    //     WAITING_FOR_PLAYERS,
-    //     VOTING,
-    //     FINISHED
-    // }
-
     @Column(nullable = true)
     private String secretWord; //secret word to be given to non-chameleon players
-
-    @ElementCollection
-    private Map<Long, String> roles; // Map<UserId, GameRole>
-
-    @ElementCollection
-    private List<Long> playerOrder; // List<UserId>
-
-    @Column(nullable = true)
-    private Long currentPlayerId; //UserId
 
     @ElementCollection
     private Map<Long, Long> votes; //Map<UserId, UserId>
@@ -120,35 +108,19 @@ public class GameSession implements Serializable {
         this.secretWord = secretWord;
     }
 
-    public Map<Long, String> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Map<Long, String> roles) {
-        this.roles = roles;
-    }
-
-    public List<Long> getPlayerOrder() {
-        return playerOrder;
-    }
-
-    public void setPlayerOrder(List<Long> playerOrder) {
-        this.playerOrder = playerOrder;
-    }
-
-    public Long getCurrentPlayerId() {
-        return currentPlayerId;
-    }
-
-    public void setCurrentPlayerId(Long currentPlayerId) {
-        this.currentPlayerId = currentPlayerId;
-    }
-
     public Map<Long, Long> getVotes() {
         return votes;
     }
 
     public void setVotes(Map<Long, Long> votes) {
         this.votes = votes;
+    }
+
+    public Player getCurrentPlayerTurn() {
+        return currentPlayerTurn;
+    }
+
+    public void setCurrentPlayerTurn(Player currentPlayerTurn) {
+        this.currentPlayerTurn = currentPlayerTurn;
     }
 }

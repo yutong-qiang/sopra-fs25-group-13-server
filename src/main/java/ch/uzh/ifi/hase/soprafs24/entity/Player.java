@@ -10,8 +10,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-
-
 @Entity
 @Table(name = "Player")
 public class Player implements Serializable {
@@ -32,8 +30,14 @@ public class Player implements Serializable {
     private boolean isChameleon;
 
     @ManyToOne
+    @JoinColumn(name = "next_player_id")
+    private Player nextPlayer;
+
+    @ManyToOne
     @JoinColumn(name = "accused_player_id")
     private Player currentAccusedPlayer;
+
+    private String givenHint;
 
     // Getters and setters for the fields
     public Long geId() {
@@ -74,5 +78,21 @@ public class Player implements Serializable {
 
     public void setIsChameleon(boolean isChameleon) {
         this.isChameleon = isChameleon;
+    }
+
+    public String getGivenHint() {
+        return givenHint;
+    }
+
+    public void setGivenHint(String givenHint) {
+        this.givenHint = givenHint;
+    }
+
+    public Player getNextPlayer() {
+        return nextPlayer;
+    }
+
+    public void setNextPlayer(Player nextPlayer) {
+        this.nextPlayer = nextPlayer;
     }
 }

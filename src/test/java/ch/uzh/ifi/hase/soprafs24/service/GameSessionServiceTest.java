@@ -2,8 +2,10 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -131,6 +133,33 @@ public class GameSessionServiceTest {
         // then
         Mockito.verify(gameSessionRepository, Mockito.times(1)).save(testGameSession);
         assertEquals(testGameSession.getCurrentState(), GameState.STARTED);
+        assertNotNull(testGameSession.getCurrentPlayerTurn());
+        assertEquals(result.getActionType(), testPlayerAction.getActionType());
+        // assert that there is exactly one chameleon set among the players
+        List<Boolean> chameleonFlags = dummyPlayers.stream()
+                .map(Player::getIsChameleon)
+                .collect(Collectors.toList());
+        assertEquals(chameleonFlags.stream()
+                .filter(Boolean::booleanValue)
+                .count(), 1);
+
+    }
+
+    @Test
+    public void giveHint_success() throws Exception {
+        // given
+        testPlayerAction.setActionType("GIVE_HINT");
+        testGameSession.setCurrentState(GameState.STARTED);
+        testGameSession.setCurrentPlayerTurn(testPlayer);
+
+        // when
+        PlayerActionResult result = gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
+        // then
+        Mockito.verify(gameSessionRepository, Mockito.times(1)).save(testGameSession);
+        Mockito.verify(playerRepository, Mockito.times(1)).save(testPlayer);
+        // test player has no nextPlayer set, so it will be considered as the last player
+        // therefore the game will transition to the state READY_FOR_VOTING
+        assertEquals(testGameSession.getCurrentState(), GameState.READY_FOR_VOTING);
         assertEquals(result.getActionType(), testPlayerAction.getActionType());
     }
 }
