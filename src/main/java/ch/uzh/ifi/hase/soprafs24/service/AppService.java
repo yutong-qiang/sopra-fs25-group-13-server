@@ -262,31 +262,4 @@ public class AppService {
                  .toList();
   }
 
-  // public GameSession startGame(String gameToken, User user) {
-  //   GameSession gameSession = getGameSessionByGameToken(gameToken);
-    
-  //   // Check if user is the creator/admin
-  //   if (!gameSession.getCreator().equals(user)) {
-  //       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can start the game");
-  //   }
-    
-  //   // Check if game is in correct state
-  //   if (gameSession.getCurrentState() != GameState.WAITING_FOR_PLAYERS) {
-  //       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game cannot be started in current state");
-  //   }
-    
-  //   // Check if enough players (minimum 2 players)
-  //   List<Player> players = playerRepository.findByGameSession(gameSession);
-  //   if (players.size() < 2) {
-  //       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not enough players to start the game");
-  //   }
-    
-  //   // Change state to STARTING
-  //   gameSession.setCurrentState(GameState.STARTING);
-  //   gameSessionRepository.save(gameSession);
-  //   gameSessionRepository.flush();
-    
-  //   return gameSession;
-  // }
-
 }

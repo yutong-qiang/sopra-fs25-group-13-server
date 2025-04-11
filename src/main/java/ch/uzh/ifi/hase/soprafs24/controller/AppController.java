@@ -1,13 +1,8 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
-// import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
@@ -30,7 +26,6 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.GameDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.UserDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
-import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
 
 /**
@@ -184,37 +179,95 @@ public class AppController {
     GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     return gameSessionGetDTO;
   }
-  
-  
-/////////////////// start game ////////////////////////
-/// idk if we need this? 
-  // @PostMapping("/game/{gameToken}/start")
-  // @ResponseStatus(HttpStatus.OK)
-  // @ResponseBody
-  // public GameSessionGetDTO startGame(
-  //     @PathVariable String gameToken,
-  //     @RequestHeader("Authorization") String authToken
-  // ) {
-  //     // verify authToken
-  //     if (!appService.isUserTokenValid(authToken)) {
-  //         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
-  //     }
-      
-  //     // get user
-  //     User user = appService.getUserByToken(authToken);
-      
-  //     // get game session
-  //     GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
-      
-  //     // verify user is the creator/admin
-  //     if (!gameSession.getCreator().equals(user)) {
-  //         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can start the game");
-  //     }
-      
-  //     // start game
-  //     GameSession updatedGameSession = appService.startGame(gameToken, user);
-      
-  //     // convert and return updated game session
-  //     return GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(updatedGameSession);
-  // }
+
+  //////////////////// get game word (only authorized / non-chameleon users can get it) ////////////////////////
+  @GetMapping("/game/word/{gameToken}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public String getGameWord(@PathVariable String gameToken,
+                            @RequestHeader("Authorization") String authToken) {
+    // Verify auth token
+    if (!appService.isUserTokenValid(authToken)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    }
+    
+    // Get game session
+    GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    if (gameSession == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    }
+    // Get user
+    User user = appService.getUserByToken(authToken);
+    // Check if game has started
+    if (gameSession.getCurrentState() != GameState.STARTED) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
+    }
+    // Check if user is in game
+    if (!appService.isUserInGameSession(user, gameSession)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not a game session player");
+    }
+    // Check if user is chameleon
+    if (gameSession.getRoles().get(user.getId()).equals("CHAMELEON")) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is the chameleon");
+    }
+    return gameSession.getSecretWord();
+  }
+
+
+  //////////////// get game role /////////////////////////
+  @GetMapping("/game/role/{gameToken}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public String getGameRole(@PathVariable String gameToken,
+                            @RequestHeader("Authorization") String authToken) {
+    // Verify auth token
+    if (!appService.isUserTokenValid(authToken)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    }
+    
+    // Get game session
+    GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    if (gameSession == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    }
+    
+    // Get user
+    User user = appService.getUserByToken(authToken);
+    
+    // Check if game has started
+    if (gameSession.getCurrentState() != GameState.STARTED) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
+    }
+    
+    // Return user's role
+    return gameSession.getRoles().get(user.getId());
+  }
+
+//////////////////// Retrieve participants /////////////////////////
+  @GetMapping("/game/players/{gameToken}")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public List<UserGetDTO> getGamePlayers(@PathVariable String gameToken,
+                                        @RequestHeader("Authorization") String authToken) {
+    // Verify auth token
+    if (!appService.isUserTokenValid(authToken)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing or invalid authToken");
+    }
+    
+    // Get game session
+    GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    if (gameSession == null) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    }
+    
+    // Get players and convert to DTOs
+    List<User> players = appService.getGameSessionPlayers(gameSession);
+    List<UserGetDTO> playerDTOs = new ArrayList<>();
+    for (User player : players) {
+        playerDTOs.add(UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(player));
+    }
+    
+    return playerDTOs;
+  }
+
 }
