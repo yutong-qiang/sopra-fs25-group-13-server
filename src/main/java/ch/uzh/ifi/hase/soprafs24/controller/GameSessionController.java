@@ -6,7 +6,10 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
+import ch.uzh.ifi.hase.soprafs24.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs24.websocket.GameSessionErrorMessage;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
@@ -20,18 +23,18 @@ import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
 public class GameSessionController {
 
     private final AppService appService;
+    private final GameSessionService gameSessionService;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    public GameSessionController(AppService appService) {
+    public GameSessionController(AppService appService, GameSessionService gameSessionService) {
         this.appService = appService;
+        this.gameSessionService = gameSessionService;
     }
 
     @MessageMapping("/game/player-action")
     public void handlePlayerAction(SimpMessageHeaderAccessor headerAccessor, PlayerAction playerAction) throws Exception {
-        System.out.println("\n\n\n\n\n\n\n\nHEREEE");
-
         // Check if the user is authenticated
         String authToken = headerAccessor.getFirstNativeHeader("auth-token");
         if (!appService.isUserTokenValid(authToken)) {
@@ -40,6 +43,8 @@ public class GameSessionController {
             messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
             return;
         }
+        // Get the user from the token
+        User user = appService.getUserByToken(authToken);
 
         // Check if the game session token is valid
         String gsToken = playerAction.getGameSessionToken();
@@ -49,21 +54,20 @@ public class GameSessionController {
             messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
             return;
         }
+        // Get game session from the token
+        GameSession gameSession = appService.getGameSessionByGameToken(gsToken);
 
-        PlayerActionResult result = new PlayerActionResult();
-        System.out.println("HEREEE sending result");
-        messagingTemplate.convertAndSend("/game/topic/" + gsToken, result);
         // Handle the player action
-        // PlayerActionResult result = gameService.handlePlayerAction(playerAction);
-        // if (result.isSuccess()) {
-        //     // Send the result to the user
-        //     messagingTemplate.convertAndSend("/game/topic/user/" + authToken, result);
-        // } else {
-        //     // Send an error message to the user
-        //     GameSessionErrorMessage errorMessage = new GameSessionErrorMessage();
-        //     errorMessage.setErrorMessage(result.getErrorMessage());
-        //     messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
-        // }
+        try {
+            PlayerActionResult result = gameSessionService.handlePlayerAction(user, playerAction, gameSession);
+            // Broadcast the result to all players in the game session
+            messagingTemplate.convertAndSend("/game/topic/" + gsToken, result);
+        } catch (Exception e) {
+            GameSessionErrorMessage errorMessage = new GameSessionErrorMessage();
+            errorMessage.setErrorMessage("An error occurred while processing the action: " + e.getMessage());
+            messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
+        }
+
     }
 
 }
