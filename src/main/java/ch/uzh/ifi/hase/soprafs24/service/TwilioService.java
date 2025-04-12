@@ -97,3 +97,16 @@ public class TwilioService {
     }
 }
 
+
+////////////////////////////////////////////////////////
+// still need to add them to application.properties
+// Auth Token
+// Account SID
+
+// add api for twilio in gameService
+// @/game/join
+// @/game
+// (another one for closing the video)
+
+// but waiting for game service & controller to be finished first
+////////////////////////////////////////////////////////
