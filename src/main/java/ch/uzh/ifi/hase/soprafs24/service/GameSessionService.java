@@ -3,6 +3,10 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -18,7 +22,6 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
 
@@ -36,25 +39,17 @@ public class GameSessionService {
     private final PlayerRepository playerRepository;
 
     @Autowired
-    public GameSessionService(UserRepository userRepository,
-            GameSessionRepository gameSessionRepository,
-            PlayerRepository playerRepository) {
+    public GameSessionService(GameSessionRepository gameSessionRepository, PlayerRepository playerRepository) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
     }
 
+    private static final Set<String> ADMIN_ACTIONS = Set.of(
+            "TEST_ADMIN_ACTION", "START_GAME", "START_VOTING", "END_VOTING"
+    );
+
     public boolean isAdminAction(PlayerAction action) {
-        switch (action.getActionType()) {
-            case "TEST_ADMIN_ACTION" -> {
-                return true;
-            }
-            case "START_GAME" -> {
-                return true;
-            }
-            default -> {
-                return false;
-            }
-        }
+        return ADMIN_ACTIONS.contains(action.getActionType());
     }
 
     public PlayerActionResult startGame(PlayerAction action, GameSession gameSession) {
@@ -92,6 +87,72 @@ public class GameSessionService {
         gameSessionRepository.save(gameSession);
         PlayerActionResult result = new PlayerActionResult();
         result.setActionType(action.getActionType());
+        return result;
+    }
+
+    public PlayerActionResult startVoting(PlayerAction action, GameSession gameSession) {
+        if (gameSession.getCurrentState() != GameState.READY_FOR_VOTING) {
+            throw new IllegalStateException("Game session is not in a valid state to start voting");
+        }
+        gameSession.setCurrentState(GameState.VOTING);
+        gameSessionRepository.save(gameSession);
+        PlayerActionResult result = new PlayerActionResult();
+        result.setActionType(action.getActionType());
+        return result;
+    }
+
+    public PlayerActionResult doVote(Player player, PlayerAction action, GameSession gameSession) {
+        if (gameSession.getCurrentState() != GameState.VOTING) {
+            throw new IllegalStateException("Game session is not in a valid state to vote");
+        }
+        String accused_username = action.getActionContent();
+        // find player with matching username
+        List<Player> players = playerRepository.findByGameSession(gameSession);
+        Player accusedPlayer = players.stream()
+                .filter(p -> p.getUser().getUsername().equals(accused_username))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Accused player not found"));
+        if (accusedPlayer == player) {
+            throw new IllegalArgumentException("Player cannot vote for themselves");
+        }
+        player.setCurrentAccusedPlayer(accusedPlayer);
+        playerRepository.save(player);
+        // check if all players have voted
+        boolean allPlayersVoted = players.stream()
+                .allMatch(p -> p.getCurrentAccusedPlayer() != null);
+        if (!allPlayersVoted) {
+            // return empty player action result
+            PlayerActionResult result = new PlayerActionResult();
+            result.setActionType(action.getActionType());
+            return result;
+        }
+        // all players have voted, count the votes
+        Map<Player, Long> voteCount = players.stream()
+                .map(Player::getCurrentAccusedPlayer)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        long maxVotes = voteCount.values().stream()
+                .max(Long::compareTo).orElse(0L);
+
+        List<Player> mostVotedPlayersList = voteCount.entrySet().stream()
+                .filter(entry -> entry.getValue() == maxVotes)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        // in case of a draw, pick a random player as the most voted one
+        Player mostVotedPlayer = mostVotedPlayersList.get(
+                ThreadLocalRandom.current().nextInt(mostVotedPlayersList.size())
+        );
+        // handle votation outcome
+        PlayerActionResult result = new PlayerActionResult();
+        result.setActionType(action.getActionType());
+        if (mostVotedPlayer.getIsChameleon()) {
+            result.setActionResult("CHAMELEON_FOUND");
+            gameSession.setCurrentState(GameState.CHAMELEON_TURN);
+        } else {
+            result.setActionResult("CHAMELEON_WON");
+            gameSession.setCurrentState(GameState.FINISHED);
+        }
+        gameSessionRepository.save(gameSession);
         return result;
     }
 
@@ -147,6 +208,12 @@ public class GameSessionService {
             }
             case "GIVE_HINT" -> {
                 return giveHint(player, action, gameSession);
+            }
+            case "START_VOTING" -> {
+                return startVoting(action, gameSession);
+            }
+            case "VOTE" -> {
+                return doVote(player, action, gameSession);
             }
             default -> {
                 throw new IllegalArgumentException("Invalid action type: " + action.getActionType());

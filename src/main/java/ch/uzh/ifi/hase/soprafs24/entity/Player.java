@@ -40,11 +40,11 @@ public class Player implements Serializable {
     private String givenHint;
 
     // Getters and setters for the fields
-    public Long geId() {
+    public Long getId() {
         return id;
     }
 
-    public void seId(Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
