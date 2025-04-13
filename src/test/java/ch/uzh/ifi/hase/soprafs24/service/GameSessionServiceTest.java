@@ -31,6 +31,9 @@ public class GameSessionServiceTest {
     @Mock
     private PlayerRepository playerRepository;
 
+    @Mock
+    private WordService wordService;
+
     private GameSessionService gameSessionService;
 
     private User testUser;
@@ -41,7 +44,7 @@ public class GameSessionServiceTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        gameSessionService = new GameSessionService(gameSessionRepository, playerRepository);
+        gameSessionService = new GameSessionService(gameSessionRepository, playerRepository, wordService);
         // given
         testUser = new User();
         testUser.setId(1L);

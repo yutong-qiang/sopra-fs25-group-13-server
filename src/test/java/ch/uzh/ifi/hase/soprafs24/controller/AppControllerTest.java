@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
@@ -569,216 +570,351 @@ public class AppControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    /// GET /game/word/{gameToken}
-  /// successful retrieves the game word
-  /// 200 OK
-  @Test
-    public void getGameWord_success() throws Exception {
+    /// GET /game/info/{gameToken}
+    /// successful retrieves game information for a regular player
+    /// 200 OK
+    @Test
+    public void getGameInfo_success() throws Exception {
         // given
         User user = new User();
         user.setId(1L);
+        user.setUsername("testUser");
+
         GameSession gameSession = new GameSession();
+        gameSession.setId(1L);
         gameSession.setGameToken("testToken");
-        gameSession.setSecretWord("apple");
         gameSession.setCurrentState(GameState.STARTED);
-        // Map<Long, String> roles = new HashMap<>();
-        // roles.put(1L, "PLAYER");
-        // gameSession.setRoles(roles);
+        gameSession.setSecretWord("apple");
+
+        Player player = new Player();
+        player.setIsChameleon(false);
+        player.setUser(user);
+
+        Player currentTurnPlayer = new Player();
+        currentTurnPlayer.setUser(user);
+        gameSession.setCurrentPlayerTurn(currentTurnPlayer);
 
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
         given(appService.getGameSessionByGameToken("testToken")).willReturn(gameSession);
         given(appService.isUserInGameSession(user, gameSession)).willReturn(true);
+        given(appService.getPlayerByUserAndGameSession(user, gameSession)).willReturn(player);
 
         // when/then
-        MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+        MockHttpServletRequestBuilder getRequest = get("/game/info/testToken")
                 .header("Authorization", "validToken");
 
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is("apple")));
+                .andExpect(jsonPath("$.gameSessionId", is(gameSession.getId().intValue())))
+                .andExpect(jsonPath("$.gameToken", is(gameSession.getGameToken())))
+                .andExpect(jsonPath("$.role", is("PLAYER")))
+                .andExpect(jsonPath("$.secretWord", is("apple")))
+                .andExpect(jsonPath("$.gameState", is("STARTED")))
+                .andExpect(jsonPath("$.currentTurn", is(user.getUsername())));
     }
 
-    /// GET /game/word/{gameToken}
-  /// fail to retrieve the game word due to unauthorized token
-  /// 401 Unauthorized
-  @Test
-    public void getGameWord_unauthorized() throws Exception {
+
+    /// GET /game/info/{gameToken}
+    /// successful retrieves game information for a chameleon (empty secret word)
+    /// 200 OK
+    @Test
+    public void getGameInfo_chameleon_success() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+
+        GameSession gameSession = new GameSession();
+        gameSession.setId(1L);
+        gameSession.setGameToken("testToken");
+        gameSession.setCurrentState(GameState.STARTED);
+        gameSession.setSecretWord("apple");
+
+        Player player = new Player();
+        player.setIsChameleon(true);
+        player.setUser(user);
+
+        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+        given(appService.getGameSessionByGameToken("testToken")).willReturn(gameSession);
+        given(appService.isUserInGameSession(user, gameSession)).willReturn(true);
+        given(appService.getPlayerByUserAndGameSession(user, gameSession)).willReturn(player);
+
+        // when/then
+        MockHttpServletRequestBuilder getRequest = get("/game/info/testToken")
+                .header("Authorization", "validToken");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role", is("CHAMELEON")))
+                .andExpect(jsonPath("$.secretWord", is("")));
+    }
+
+    
+    /// GET /game/info/{gameToken}
+    /// fail to retrieve due to unauthorized token
+    /// 401 Unauthorized
+    @Test
+    public void getGameInfo_unauthorized() throws Exception {
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(false);
 
-        MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+        MockHttpServletRequestBuilder getRequest = get("/game/info/testToken")
                 .header("Authorization", "invalidToken");
 
         mockMvc.perform(getRequest)
                 .andExpect(status().isUnauthorized());
-    }
+        }
 
-    /// GET /game/word/{gameToken}
-  /// User not a game session player
-  /// 401 Unauthorized
-  @Test
-    public void getGameWord_userNotInGameSession_unauthorized() throws Exception {
-        // given
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("testUser");
-        user.setToken("validToken");
-
-        GameSession gameSession = new GameSession();
-        gameSession.setGameToken("testToken");
-        gameSession.setCurrentState(GameState.STARTED);
-        gameSession.setSecretWord("apple");
-
-        // Map<Long, String> roles = new HashMap<>();
-        // roles.put(2L, "PLAYER"); // User ID 1 is not in the game
-        // gameSession.setRoles(roles);
+    /// GET /game/info/{gameToken}
+    /// fail to retrieve due to game session not found
+    /// 404 Not Found
+    @Test
+    public void getGameInfo_gameNotFound() throws Exception {
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
-        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
-        given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
-        given(appService.isUserInGameSession(user, gameSession)).willReturn(false);
-
-        // when/then
-        MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
-                .header("Authorization", "validToken");
-
-        mockMvc.perform(getRequest)
-                .andExpect(status().isUnauthorized());
-    }
-
-    /// GET /game/word/{gameToken}
-  /// fail to retrieve the game word due to user being the chameleon
-  /// 401 Unauthorized
-  @Test
-    public void getGameWord_userIsChameleon_unauthorized() throws Exception {
-        // given
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("testUser");
-        user.setToken("validToken");
-
-        GameSession gameSession = new GameSession();
-        gameSession.setGameToken("testToken");
-        gameSession.setCurrentState(GameState.STARTED);
-        gameSession.setSecretWord("apple");
-
-        // Map<Long, String> roles = new HashMap<>();
-        // roles.put(1L, "CHAMELEON");
-        // gameSession.setRoles(roles);
-        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
-        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
-        given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
-        given(appService.isUserInGameSession(user, gameSession)).willReturn(true);
-
-        // when/then
-        MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
-                .header("Authorization", "validToken");
-
-        mockMvc.perform(getRequest)
-                .andExpect(status().isUnauthorized());
-    }
-
-    /// GET /game/word/{gameToken}
-  /// game session not found
-  /// 404 Not Found
-  @Test
-    public void getGameWord_gameSessionNotFound() throws Exception {
-        User user = new User();
-        user.setId(1L);
-
-        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
-        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
-        given(appService.getGameSessionByGameToken("invalidToken"))
+        given(appService.getGameSessionByGameToken(Mockito.anyString()))
                 .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
 
-        MockHttpServletRequestBuilder getRequest = get("/game/word/invalidToken")
+        MockHttpServletRequestBuilder getRequest = get("/game/info/invalidToken")
                 .header("Authorization", "validToken");
 
         mockMvc.perform(getRequest)
                 .andExpect(status().isNotFound());
     }
 
-    /// GET /game/word/{gameToken}
-  /// game not started yet
-  /// 400 Bad Request
-  @Test
-    public void getGameWord_gameNotStarted() throws Exception {
+    
+    /// GET /game/info/{gameToken}
+    /// fail to retrieve due to user not in game session
+    /// 401 Unauthorized
+    @Test
+    public void getGameInfo_userNotInGame() throws Exception {
         // given
         User user = new User();
         GameSession gameSession = new GameSession();
-        gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
+        gameSession.setGameToken("testToken");
 
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+        given(appService.isUserInGameSession(user, gameSession)).willReturn(false);
 
-        MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+        MockHttpServletRequestBuilder getRequest = get("/game/info/testToken")
                 .header("Authorization", "validToken");
-
-        mockMvc.perform(getRequest)
-                .andExpect(status().isBadRequest());
-    }
-
-    /// GET /game/role/{gameToken}
-  /// successful retrieves the game role
-  /// 200 OK
-  @Test
-    public void getGameRole_success() throws Exception {
-        // given
-        User user = new User();
-        user.setId(1L);
-        GameSession gameSession = new GameSession();
-        gameSession.setCurrentState(GameState.STARTED);
-        // Map<Long, String> roles = new HashMap<>();
-        // roles.put(1L, "PLAYER");
-        // gameSession.setRoles(roles);
-
-        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
-        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
-        given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
-
-        // when/then
-        MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
-                .header("Authorization", "validToken");
-
-        mockMvc.perform(getRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", is("PLAYER")));
-    }
-
-    /// GET /game/role/{gameToken}
-  /// invalid or missing token
-  /// 401 Unauthorized
-  @Test
-    public void getGameRole_unauthorized() throws Exception {
-        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(false);
-
-        MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
-                .header("Authorization", "invalidToken");
 
         mockMvc.perform(getRequest)
                 .andExpect(status().isUnauthorized());
     }
 
-    /// GET /game/role/{gameToken}
-  /// game not started yet
-  /// 400 Bad Request
-  @Test
-    public void getGameRole_gameNotStarted() throws Exception {
-        // given
-        User user = new User();
-        GameSession gameSession = new GameSession();
-        gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
+//     /// GET /game/word/{gameToken}
+//   /// successful retrieves the game word
+//   /// 200 OK
+//   @Test
+//     public void getGameWord_success() throws Exception {
+//         // given
+//         User user = new User();
+//         user.setId(1L);
+//         GameSession gameSession = new GameSession();
+//         gameSession.setGameToken("testToken");
+//         gameSession.setCurrentState(GameState.STARTED);
+//         gameSession.setSecretWord("apple");
 
-        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
-        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
-        given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+//         Player player = new Player();
+//         player.setIsChameleon(false);
 
-        MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
-                .header("Authorization", "validToken");
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken("testToken")).willReturn(gameSession);
+//         given(appService.isUserInGameSession(user, gameSession)).willReturn(true);
 
-        mockMvc.perform(getRequest)
-                .andExpect(status().isBadRequest());
-    }
+//         // when/then
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isOk())
+//                 .andExpect(jsonPath("$", is("apple")));
+//     }
+
+//     /// GET /game/word/{gameToken}
+//   /// fail to retrieve the game word due to unauthorized token
+//   /// 401 Unauthorized
+//   @Test
+//     public void getGameWord_unauthorized() throws Exception {
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(false);
+
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+//                 .header("Authorization", "invalidToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isUnauthorized());
+//     }
+
+//     /// GET /game/word/{gameToken}
+//   /// User not a game session player
+//   /// 401 Unauthorized
+//   @Test
+//     public void getGameWord_userNotInGameSession_unauthorized() throws Exception {
+//         // given
+//         User user = new User();
+//         user.setId(1L);
+//         user.setUsername("testUser");
+//         user.setToken("validToken");
+
+//         GameSession gameSession = new GameSession();
+//         gameSession.setGameToken("testToken");
+//         gameSession.setCurrentState(GameState.STARTED);
+//         gameSession.setSecretWord("apple");
+
+//         // Map<Long, String> roles = new HashMap<>();
+//         // roles.put(2L, "PLAYER"); // User ID 1 is not in the game
+//         // gameSession.setRoles(roles);
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+//         given(appService.isUserInGameSession(user, gameSession)).willReturn(false);
+
+//         // when/then
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isUnauthorized());
+//     }
+
+//     /// GET /game/word/{gameToken}
+//   /// fail to retrieve the game word due to user being the chameleon
+//   /// 401 Unauthorized
+//   @Test
+//     public void getGameWord_userIsChameleon_unauthorized() throws Exception {
+//         // given
+//         User user = new User();
+//         user.setId(1L);
+//         user.setUsername("testUser");
+//         user.setToken("validToken");
+
+//         GameSession gameSession = new GameSession();
+//         gameSession.setGameToken("testToken");
+//         gameSession.setCurrentState(GameState.STARTED);
+//         gameSession.setSecretWord("apple");
+
+//         // Map<Long, String> roles = new HashMap<>();
+//         // roles.put(1L, "CHAMELEON");
+//         // gameSession.setRoles(roles);
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+//         given(appService.isUserInGameSession(user, gameSession)).willReturn(true);
+
+//         // when/then
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isUnauthorized());
+//     }
+
+//     /// GET /game/word/{gameToken}
+//   /// game session not found
+//   /// 404 Not Found
+//   @Test
+//     public void getGameWord_gameSessionNotFound() throws Exception {
+//         User user = new User();
+//         user.setId(1L);
+
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken("invalidToken"))
+//                 .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
+
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/invalidToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isNotFound());
+//     }
+
+//     /// GET /game/word/{gameToken}
+//   /// game not started yet
+//   /// 400 Bad Request
+//   @Test
+//     public void getGameWord_gameNotStarted() throws Exception {
+//         // given
+//         User user = new User();
+//         GameSession gameSession = new GameSession();
+//         gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
+
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+
+//         MockHttpServletRequestBuilder getRequest = get("/game/word/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isBadRequest());
+//     }
+
+//     /// GET /game/role/{gameToken}
+//   /// successful retrieves the game role
+//   /// 200 OK
+//   @Test
+//     public void getGameRole_success() throws Exception {
+//         // given
+//         User user = new User();
+//         user.setId(1L);
+//         GameSession gameSession = new GameSession();
+//         gameSession.setCurrentState(GameState.STARTED);
+//         // Map<Long, String> roles = new HashMap<>();
+//         // roles.put(1L, "PLAYER");
+//         // gameSession.setRoles(roles);
+
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+
+//         // when/then
+//         MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isOk())
+//                 .andExpect(jsonPath("$", is("PLAYER")));
+//     }
+
+//     /// GET /game/role/{gameToken}
+//   /// invalid or missing token
+//   /// 401 Unauthorized
+//   @Test
+//     public void getGameRole_unauthorized() throws Exception {
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(false);
+
+//         MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
+//                 .header("Authorization", "invalidToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isUnauthorized());
+//     }
+
+//     /// GET /game/role/{gameToken}
+//   /// game not started yet
+//   /// 400 Bad Request
+//   @Test
+//     public void getGameRole_gameNotStarted() throws Exception {
+//         // given
+//         User user = new User();
+//         GameSession gameSession = new GameSession();
+//         gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
+
+//         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+//         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+//         given(appService.getGameSessionByGameToken(Mockito.anyString())).willReturn(gameSession);
+
+//         MockHttpServletRequestBuilder getRequest = get("/game/role/testToken")
+//                 .header("Authorization", "validToken");
+
+//         mockMvc.perform(getRequest)
+//                 .andExpect(status().isBadRequest());
+//     }
 
     /**
      * Helper Method to convert userPostDTO into a JSON string such that the
