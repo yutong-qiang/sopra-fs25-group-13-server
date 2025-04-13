@@ -262,4 +262,9 @@ public class AppService {
                  .toList();
   }
 
+  public Player getPlayerByUserAndGameSession(User user, GameSession gameSession) {
+    return playerRepository.findByUserAndGameSession(user, gameSession)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
+  }
+
 }

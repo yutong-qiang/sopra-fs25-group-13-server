@@ -13,12 +13,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureMessageBroker(MessageBrokerRegistry config) {
     config.enableSimpleBroker("/game/topic");
-    // config.setApplicationDestinationPrefixes("/app");
+    config.setApplicationDestinationPrefixes("/app");
   }
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-    registry.addEndpoint("/game-ws").withSockJS();
+    registry.addEndpoint("/ws")
+      .setAllowedOrigins("http://localhost:3000")  // frontend URL
+      .withSockJS();
   }
 
 }

@@ -32,7 +32,7 @@ public class GameSession implements Serializable {
     private User creator;
 
     @ManyToOne
-    @JoinColumn(name = "current_player_id", nullable = false)
+    @JoinColumn(name = "current_player_id", nullable = true)
     private Player currentPlayerTurn;
 
     @Column(nullable = true)

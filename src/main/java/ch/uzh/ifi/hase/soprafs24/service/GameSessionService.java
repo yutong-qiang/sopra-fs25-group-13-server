@@ -37,11 +37,17 @@ public class GameSessionService {
 
     private final GameSessionRepository gameSessionRepository;
     private final PlayerRepository playerRepository;
+    private final WordService wordService;
 
     @Autowired
-    public GameSessionService(GameSessionRepository gameSessionRepository, PlayerRepository playerRepository) {
+
+    public GameSessionService(
+            GameSessionRepository gameSessionRepository,
+            PlayerRepository playerRepository,
+            WordService wordService) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
+        this.wordService = wordService;
     }
 
     private static final Set<String> ADMIN_ACTIONS = Set.of(
@@ -53,14 +59,22 @@ public class GameSessionService {
     }
 
     public PlayerActionResult startGame(PlayerAction action, GameSession gameSession) {
+        log.info("Starting game for session: {}", gameSession.getGameToken());
         if (gameSession.getCurrentState() != GameState.WAITING_FOR_PLAYERS) {
+            log.error("Invalid game state: {}", gameSession.getCurrentState());
             throw new IllegalStateException("Game session is not in a valid state to start");
         }
         List<Player> players = playerRepository.findByGameSession(gameSession);
+        
         if (players.size() < 4) {
             throw new IllegalStateException("Not enough players to start the game");
         }
         gameSession.setCurrentState(GameState.STARTED);
+        
+        // Generate and set the secret word
+        String secretWord = wordService.getRandomWord();
+        gameSession.setSecretWord(secretWord);
+        
         // generate random player order list
         List<Integer> playerOrder = IntStream.range(0, players.size())
                 .boxed()
@@ -164,7 +178,28 @@ public class GameSessionService {
         if (gameSession.getCurrentPlayerTurn() != player) {
             throw new IllegalStateException("Wrong player turn");
         }
-        player.setGivenHint(action.getActionContent());
+
+        String hint = action.getActionContent();
+
+        // check if the hint is null or empty
+        if (hint == null || hint.trim().isEmpty()) {
+            throw new IllegalStateException("Hint cannot be empty");
+        }
+
+        // check if hint contains only one word
+        if (hint.split("\\s+").length > 1) {
+            throw new IllegalStateException("Hint must be a single word");
+        }
+
+        hint = hint.toLowerCase();
+        String secretWord = gameSession.getSecretWord().toLowerCase();
+        
+        // check if the hint is a substring of the secret word
+        if (hint.contains(secretWord)) {
+            throw new IllegalStateException("Hint cannot contain parts of the secret word");
+        }
+
+        player.setGivenHint(hint);
         playerRepository.save(player);
         // set the next player turn
         Player nextPlayer = player.getNextPlayer();
@@ -182,13 +217,19 @@ public class GameSessionService {
     }
 
     public PlayerActionResult handlePlayerAction(User user, PlayerAction action, GameSession gameSession) throws Exception {
+        log.info("Handling player action: {}", action.getActionType());
+        log.info("User attempting action - ID: {}, Username: {}", user.getId(), user.getUsername());
+        log.info("Game creator - ID: {}, Username: {}", gameSession.getCreator().getId(), gameSession.getCreator().getUsername());
+        
         // get the player performing the action
         Player player = playerRepository.findByUserAndGameSession(user, gameSession).orElseThrow(
                 () -> new Exception("User not part of the game session")
         );
+        log.info("Found player in game session");
 
-        // in case of an admin action, check if the user is the creator of the game session
-        if (isAdminAction(action) && gameSession.getCreator() != user) {
+        // in case of an admin action, check if the user is the creator
+        if (isAdminAction(action) && !gameSession.getCreator().equals(user)) {
+            log.error("User is not game creator");
             throw new Exception("Only the game session creator can perform this action");
         }
 
@@ -204,6 +245,7 @@ public class GameSessionService {
                 return result;
             }
             case "START_GAME" -> {
+                log.info("Processing START_GAME action");
                 return startGame(action, gameSession);
             }
             case "GIVE_HINT" -> {

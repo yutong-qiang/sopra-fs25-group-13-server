@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -22,6 +24,8 @@ import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
 @Controller
 public class GameSessionController {
 
+    private final Logger log = LoggerFactory.getLogger(GameSessionController.class);
+
     private final AppService appService;
     private final GameSessionService gameSessionService;
 
@@ -35,9 +39,15 @@ public class GameSessionController {
 
     @MessageMapping("/game/player-action")
     public void handlePlayerAction(SimpMessageHeaderAccessor headerAccessor, PlayerAction playerAction) throws Exception {
+        log.info("Received WebSocket message - Action Type: {}", playerAction.getActionType());
+        log.info("Game Token: {}", playerAction.getGameSessionToken());
+        
         // Check if the user is authenticated
         String authToken = headerAccessor.getFirstNativeHeader("auth-token");
+        log.info("Auth Token: {}", authToken);
+        
         if (!appService.isUserTokenValid(authToken)) {
+            log.error("Invalid auth token");
             GameSessionErrorMessage errorMessage = new GameSessionErrorMessage();
             errorMessage.setErrorMessage("Invalid auth token");
             messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
@@ -45,6 +55,7 @@ public class GameSessionController {
         }
         // Get the user from the token
         User user = appService.getUserByToken(authToken);
+        log.info("User found: {}", user.getUsername());
 
         // Check if the game session token is valid
         String gsToken = playerAction.getGameSessionToken();
@@ -60,9 +71,10 @@ public class GameSessionController {
         // Handle the player action
         try {
             PlayerActionResult result = gameSessionService.handlePlayerAction(user, playerAction, gameSession);
-            // Broadcast the result to all players in the game session
+            log.info("Action processed successfully");
             messagingTemplate.convertAndSend("/game/topic/" + gsToken, result);
         } catch (Exception e) {
+            log.error("Error processing action: {}", e.getMessage());
             GameSessionErrorMessage errorMessage = new GameSessionErrorMessage();
             errorMessage.setErrorMessage("An error occurred while processing the action: " + e.getMessage());
             messagingTemplate.convertAndSend("/game/topic/user/" + authToken, errorMessage);
