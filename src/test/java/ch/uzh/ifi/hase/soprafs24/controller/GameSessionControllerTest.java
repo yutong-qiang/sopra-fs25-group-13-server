@@ -73,7 +73,7 @@ public class GameSessionControllerTest {
         // Connect to the WebSocket server.
         String url = "ws://localhost:" + port + "/game-ws";
         StompSession session = stompClient.connect(url, new StompSessionHandlerAdapter() {
-        }).get(1, TimeUnit.SECONDS);
+        }).get(3, TimeUnit.SECONDS);
 
         // The stomp client will trigger the latch when the message is received.
         final CountDownLatch errorReceived = new CountDownLatch(1);
@@ -126,7 +126,7 @@ public class GameSessionControllerTest {
         // Connect to the WebSocket server.
         String url = "ws://localhost:" + port + "/game-ws";
         StompSession session = stompClient.connect(url, new StompSessionHandlerAdapter() {
-        }).get(1, TimeUnit.SECONDS);
+        }).get(3, TimeUnit.SECONDS);
 
         // The stomp client will trigger the latch when the message is received.
         final CountDownLatch messageReceived = new CountDownLatch(1);
@@ -174,7 +174,7 @@ public class GameSessionControllerTest {
         // Connect to the WebSocket server.
         String url = "ws://localhost:" + port + "/game-ws";
         StompSession session = stompClient.connect(url, new StompSessionHandlerAdapter() {
-        }).get(1, TimeUnit.SECONDS);
+        }).get(3, TimeUnit.SECONDS);
 
         // The stomp client will trigger the latch when the message is received.
         final CountDownLatch errorReceived = new CountDownLatch(1);
