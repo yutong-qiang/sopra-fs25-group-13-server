@@ -18,7 +18,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/game-ws")
-                .setAllowedOrigins("*")
+                .setAllowedOrigins("http://localhost:3000","https://sopra-fs25-group-13-client-3r8y.vercel.app")
                 .withSockJS();
     }
 
