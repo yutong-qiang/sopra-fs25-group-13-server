@@ -56,6 +56,13 @@ jobs:
           TWILIO_API_KEY: ${{ secrets.TWILIO_API_KEY }}
           TWILIO_API_SECRET: ${{ secrets.TWILIO_API_SECRET }}
 
+      - name: Replace Twilio placeholders in app.yaml
+        run: |
+          sed -i "s|__TWILIO_ACCOUNT_SID__|${{ secrets.TWILIO_ACCOUNT_SID }}|g" app.yaml
+          sed -i "s|__TWILIO_AUTH_TOKEN__|${{ secrets.TWILIO_AUTH_TOKEN }}|g" app.yaml
+          sed -i "s|__TWILIO_API_KEY__|${{ secrets.TWILIO_API_KEY }}|g" app.yaml
+          sed -i "s|__TWILIO_API_SECRET__|${{ secrets.TWILIO_API_SECRET }}|g" app.yaml
+
       - name: Deploy to App Engine
         id: deploy
         uses: google-github-actions/deploy-appengine@v0.2.0
@@ -63,11 +70,6 @@ jobs:
           deliverables: app.yaml
           version: v1
           credentials: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
-        env:
-          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
-          TWILIO_API_KEY: ${{ secrets.TWILIO_API_KEY }}
-          TWILIO_API_SECRET: ${{ secrets.TWILIO_API_SECRET }}
 
       - name: Test
         run: curl "${{ steps.deploy.outputs.url }}"
