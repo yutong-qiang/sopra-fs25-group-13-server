@@ -14,16 +14,16 @@ import com.twilio.rest.video.v1.Room;
 @Service
 public class TwilioService {
 
-    @Value("${twilio.account.sid}")
+    @Value("${TWILIO_ACCOUNT_SID:default_value}")
     private String accountSid;
 
-    @Value("${twilio.auth.token}")
+    @Value("${TWILIO_AUTH_TOKEN:default_value}")
     private String authToken;
 
-    @Value("${twilio.api.key}")
+    @Value("${TWILIO_API_KEY:default_value}")
     private String apiKey;
 
-    @Value("${twilio.api.secret}")
+    @Value("${TWILIO_API_SECRET:default_value}")
     private String apiSecret;
 
     public record TwilioRoomInfo(String roomSid, String token) {
