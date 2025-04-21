@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
 
 /**
@@ -23,10 +24,11 @@ public interface GameDTOMapper {
 
   GameDTOMapper INSTANCE = Mappers.getMapper(GameDTOMapper.class);
 
-
-  @Mapping(source = "id", target = "gameSessionId")
-  @Mapping(source = "gameToken", target = "gameToken")
-  @Mapping(source = "twilioVideoChatToken", target = "twilioVideoChatToken")
-  @Mapping(source = "currentState", target = "gameState")
-  GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession);
+  @Mapping(target = "gameSessionId", source = "gameSession.id")
+  @Mapping(target = "gameToken", source = "gameSession.gameToken")
+  @Mapping(target = "twilioVideoChatToken", source = "player.twilioToken")
+  @Mapping(target = "gameState", source = "gameSession.currentState")
+  @Mapping(target = "currentTurn", source = "gameSession.currentPlayerTurn.user.username")
+  @Mapping(target = "role", expression = "java(player.getIsChameleon() ? \"CHAMELEON\" : \"NORMAL\")")
+  GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession, Player player);
 }

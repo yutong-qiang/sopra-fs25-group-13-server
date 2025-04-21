@@ -23,6 +23,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import java.util.ArrayList;
 import ch.uzh.ifi.hase.soprafs24.constant.GameState;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 
 
 public class AppServiceTest {
@@ -98,6 +99,7 @@ public class AppServiceTest {
     // Mock TwilioService
     when(twilioService.createVideoRoom(anyString())).thenReturn(new TwilioService.TwilioRoomInfo("RM123", mockTwilioToken));
     when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(twilioService.generateToken(anyString(), anyString())).thenReturn(mockTwilioToken);
 
     // when
     GameSession createdSession = appService.createGameSession(creator);
@@ -105,12 +107,14 @@ public class AppServiceTest {
     // then
     assertNotNull(createdSession);
     assertEquals(creator, createdSession.getCreator());
-    assertEquals(mockTwilioToken, createdSession.getTwilioVideoChatToken());
     assertEquals("RM123", createdSession.getTwilioRoomSid());
     assertEquals(GameState.WAITING_FOR_PLAYERS, createdSession.getCurrentState());
     verify(twilioService).createVideoRoom(createdSession.getGameToken());
-    verify(gameSessionRepository, Mockito.times(2)).save(any(GameSession.class));
+    verify(gameSessionRepository).save(any(GameSession.class));
     verify(gameSessionRepository).flush();
+    verify(twilioService).generateToken(creator.getUsername(), "RM123");
+    verify(playerRepository).save(any(Player.class));
+    verify(playerRepository).flush();
   }
 
   @Test

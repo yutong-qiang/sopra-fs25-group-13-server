@@ -124,9 +124,9 @@ public class AppController {
         // create game session
         GameSession gameSession = appService.createGameSession(user);
         // add the user to the game session
-        appService.addToGameSession(user, gameSession);
+        Player player = appService.addToGameSession(user, gameSession);
         // return the game session
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
         return gameSessionGetDTO;
     }
 
@@ -168,9 +168,9 @@ public class AppController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is not accepting players");
         }
         // add the user to the game session
-        appService.addToGameSession(user, gameSession);
+        Player player = appService.addToGameSession(user, gameSession);
         // return the game session
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
         return gameSessionGetDTO;
     }
 
@@ -301,7 +301,7 @@ public class AppController {
         Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
 
         // Create DTO
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
         
         // Set role
         gameSessionGetDTO.setRole(player.getIsChameleon() ? "CHAMELEON" : "PLAYER");

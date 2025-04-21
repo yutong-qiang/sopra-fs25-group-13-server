@@ -155,27 +155,26 @@ public class AppService {
     gameSession.setCreator(creator);
     gameSession.setGameToken(UUID.randomUUID().toString());
     gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
-
-    gameSession = gameSessionRepository.save(gameSession);
-    TwilioService.TwilioRoomInfo twilioInfo = twilioService.createVideoRoom(gameSession.getGameToken());
     
-    gameSession.setTwilioRoomSid(twilioInfo.roomSid());
-    gameSession.setTwilioVideoChatToken(twilioInfo.token());
+    // Create Twilio room
+    TwilioService.TwilioRoomInfo roomInfo = twilioService.createVideoRoom(gameSession.getGameToken());
+    gameSession.setTwilioRoomSid(roomInfo.roomSid());
 
+    // Save game session
     gameSession = gameSessionRepository.save(gameSession);
     gameSessionRepository.flush();
+    
+    String creatorToken = twilioService.generateToken(creator.getUsername(), roomInfo.roomSid());
 
+    // Create first player (creator)
+    Player player = new Player();
+    player.setUser(creator);
+    player.setGameSession(gameSession);
+    player.setTwilioToken(creatorToken);
+    playerRepository.save(player);
+    playerRepository.flush();
+    
     return gameSession;
-
-    // TODO: implement twilio video chat
-    // String roomSid = twilioService.createVideoRoom(gameSession.getGameToken());
-    // gameSession.setTwilioRoomSid(roomSid);
-    // // save the new game session
-    // gameSession = gameSessionRepository.save(gameSession);
-    // // flush the changes to the database
-    // gameSessionRepository.flush();
-    // // return the new game session
-    // return gameSession;
   }
 
   // add user to game session, making them a player
@@ -184,23 +183,30 @@ public class AppService {
     Player player = playerRepository.findByUserAndGameSession(participant, gameSession)
                                     .orElse(null);
     if (player != null) {
-      return player;
+        return player;
     }
     // get list of players in game session
     List<Player> players = playerRepository.findByGameSession(gameSession);
     // check that the game is not full
     if (players.size() >= 8) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is full");
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is full");
     }
+    
+    // Generate a new token for this participant to join the SAME room
+    String newToken = twilioService.generateToken(participant.getUsername(), gameSession.getTwilioRoomSid());
+    
     // create player entity
     player = new Player();
     player.setUser(participant);
     player.setGameSession(gameSession);
-    // save the changes to the game session
+    player.setTwilioToken(newToken);  // Store token per player
+    
     playerRepository.save(player);
     // flush the changes to the database
     playerRepository.flush();
-    // return the player object
+    System.out.println("🔍 Adding user to room with SID: " + gameSession.getTwilioRoomSid());
+    System.out.println("🔗 Generating token for: " + participant.getUsername());
+    
     return player;
   }
   public void removeFromGameSession(User user, GameSession gameSession) {

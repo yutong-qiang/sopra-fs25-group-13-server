@@ -56,12 +56,12 @@ public class TwilioService {
         // return mockRoomSid;
     }
 
-    private String generateToken(String identity, String roomId) {
+    public String generateToken(String identity, String roomId) {
         try {
             VideoGrant grant = new VideoGrant();
             grant.setRoom(roomId);
 
-            AccessToken token = new AccessToken.Builder(accountSid, apiKey, apiSecret)
+            AccessToken token = new AccessToken.Builder(accountSid, apiKey, apiSecret)    
                     .identity(identity)
                     .grant(grant)
                     .build();

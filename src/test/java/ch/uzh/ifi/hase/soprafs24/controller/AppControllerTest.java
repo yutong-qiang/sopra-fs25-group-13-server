@@ -332,9 +332,15 @@ public class AppControllerTest {
         gameSession.setGameToken("abc123");
         gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
+        // Create a player object that will be returned by addToGameSession
+        Player player = new Player();
+        player.setUser(user);
+        player.setGameSession(gameSession);
+
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
         given(appService.createGameSession(Mockito.any())).willReturn(gameSession);
+        given(appService.addToGameSession(Mockito.any(), Mockito.any())).willReturn(player);
 
         MockHttpServletRequestBuilder postRequest = post("/game")
                 .header("Authorization", "*");
@@ -362,8 +368,15 @@ public class AppControllerTest {
         gameSession.setTwilioRoomSid("RM123456789");
         gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
+        // Create a player object that will be returned by addToGameSession
+        Player player = new Player();
+        player.setUser(user);
+        player.setGameSession(gameSession);
+        player.setTwilioToken("mock_twilio_token");
+
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
         given(appService.createGameSession(Mockito.any())).willReturn(gameSession);
+        given(appService.addToGameSession(Mockito.any(), Mockito.any())).willReturn(player);
 
         // when/then
         MockHttpServletRequestBuilder postRequest = post("/game")
@@ -433,10 +446,17 @@ public class AppControllerTest {
         gameSession.setGameToken("abc123");
         gameSession.setCurrentState(GameState.WAITING_FOR_PLAYERS);
 
+        // Create a player object that will be returned by addToGameSession
+        Player player = new Player();
+        player.setUser(user);
+        player.setGameSession(gameSession);
+        player.setTwilioToken("mock_twilio_token");
+
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.isGameTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
         given(appService.getGameSessionByGameToken(Mockito.any())).willReturn(gameSession);
+        given(appService.addToGameSession(Mockito.any(), Mockito.any())).willReturn(player);
 
         MockHttpServletRequestBuilder postRequest = post("/game/join/abc123")
                 .header("Authorization", "*");

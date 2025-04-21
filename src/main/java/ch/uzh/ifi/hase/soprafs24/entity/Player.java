@@ -39,6 +39,9 @@ public class Player implements Serializable {
 
     private String givenHint;
 
+    @Column(nullable = true, length = 1000)
+    private String twilioToken;
+
     // Getters and setters for the fields
     public Long getId() {
         return id;
@@ -94,5 +97,13 @@ public class Player implements Serializable {
 
     public void setNextPlayer(Player nextPlayer) {
         this.nextPlayer = nextPlayer;
+    }
+
+    public String getTwilioToken() {
+        return twilioToken;
+    }
+
+    public void setTwilioToken(String twilioToken) {
+        this.twilioToken = twilioToken;
     }
 }

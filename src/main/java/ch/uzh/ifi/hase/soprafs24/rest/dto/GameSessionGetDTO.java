@@ -6,7 +6,7 @@ public class GameSessionGetDTO {
     private String gameToken;
     private String twilioVideoChatToken;
     private String twilioRoomSid;
-
+    private String username;
     private String role;
     private String secretWord;
     private GameState gameState;
@@ -43,7 +43,15 @@ public class GameSessionGetDTO {
 
     public void setTwilioRoomSid(String twilioRoomSid) {
         this.twilioRoomSid = twilioRoomSid;
-    } 
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     public String getRole() {
         return role;
