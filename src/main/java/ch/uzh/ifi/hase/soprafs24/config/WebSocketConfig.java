@@ -6,7 +6,6 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -19,8 +18,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/game-ws")
-                .setAllowedOrigins("http://localhost:3000","https://sopra-fs25-group-13-client-3r8y.vercel.app");
-                //.withSockJS();
+                .setAllowedOrigins("http://localhost:3000","https://sopra-fs25-group-13-client-3r8y.vercel.app")
+                .withSockJS();
     }
 
 }
