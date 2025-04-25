@@ -1,8 +1,11 @@
 # https://cloud.google.com/appengine/docs/the-appengine-environments#comparing_high-level_features
 # https://cloud.google.com/appengine/docs/standard
 
-runtime: java17
-instance_class: B1
+runtime: java
+env: flex
+
+runtime_config:
+  jdk: openjdk17
 
 manual_scaling:
   instances: 1
