@@ -70,33 +70,5 @@ jobs:
           # no `version:` → gcloud will generate one
           credentials: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
 
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          credentials: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
-
-      - name: Delete all other App Engine versions
-        run: |
-          # get the latest version ID by createTime
-          CURRENT=$(gcloud app versions list \
-            --service=default \
-            --sort-by=~version.createTime \
-            --limit=1 \
-            --format="value(version.id)")
-
-          # list every version ID, filter out the current one
-          OTHER=$(gcloud app versions list \
-            --service=default \
-            --format="value(version.id)" \
-            | grep -v "^${CURRENT}$")
-
-          if [ -n "$OTHER" ]; then
-            echo "Deleting old versions: $OTHER"
-            echo "$OTHER" | xargs gcloud app versions delete --service=default --quiet
-          else
-            echo "No old versions to delete."
-          fi
-
       - name: Test
         run: curl "${{ steps.deploy.outputs.version_url }}"
