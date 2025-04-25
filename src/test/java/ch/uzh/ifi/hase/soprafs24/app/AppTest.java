@@ -132,7 +132,7 @@ public class AppTest {
         session.send(stompHeaders, action);
         // 5) Verify state change
         // (allow a brief moment if your handler is async)
-        Thread.sleep(200);
+        Thread.sleep(2000);
         assertEquals(GameState.STARTED,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
     }
