@@ -261,12 +261,9 @@ public class AppService {
     return playerRepository.findByUserAndGameSession(user, gameSession).isPresent();
   }
 
-  public List<User> getGameSessionPlayers(GameSession gameSession) {
-    List<Player> players = playerRepository.findByGameSession(gameSession);
-    return players.stream()
-                 .map(Player::getUser)
-                 .toList();
-  }
+    public List<Player> getGameSessionPlayers(GameSession gameSession) {
+        return playerRepository.findByGameSession(gameSession);
+    }
 
   public Player getPlayerByUserAndGameSession(User user, GameSession gameSession) {
     return playerRepository.findByUserAndGameSession(user, gameSession)

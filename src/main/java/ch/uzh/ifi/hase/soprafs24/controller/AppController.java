@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +23,11 @@ import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.GameDTOMapper;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.PlayerGetDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.UserDTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.AppService;
 import ch.uzh.ifi.hase.soprafs24.service.TwilioService;
@@ -239,7 +242,7 @@ public class AppController {
   @GetMapping("/game/players/{gameToken}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public List<UserGetDTO> getGamePlayers(@PathVariable String gameToken,
+    public List<PlayerGetDTO> getGamePlayers(@PathVariable String gameToken,
             @RequestHeader("Authorization") String authToken) {
         // Verify auth token
         if (!appService.isUserTokenValid(authToken)) {
@@ -252,14 +255,13 @@ public class AppController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
         }
 
-        // Get players and convert to DTOs
-        List<User> players = appService.getGameSessionPlayers(gameSession);
-        List<UserGetDTO> playerDTOs = new ArrayList<>();
-        for (User player : players) {
-            playerDTOs.add(UserDTOMapper.INSTANCE.convertEntityToUserGetDTO(player));
-        }
+        // Get players and convert to PlayerGetDTOs
+        List<Player> players = appService.getGameSessionPlayers(gameSession);
+        // 1) Using the mapper’s INSTANCE
+        return players.stream()
+                .map(PlayerGetDTOMapper.INSTANCE::convertEntityToPlayerGetDTO)
+                .collect(Collectors.toList());
 
-        return playerDTOs;
     }
 
     //////////////////// get game info (includes get role and word)/////////////////////////
