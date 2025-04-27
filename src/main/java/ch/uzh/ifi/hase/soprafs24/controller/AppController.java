@@ -174,77 +174,67 @@ public class AppController {
         return gameSessionGetDTO;
     }
 
-    
-
-  //   //////////////////// get game word (only authorized / non-chameleon users can get it) ////////////////////////
-  // @GetMapping("/game/word/{gameToken}")
-  //   @ResponseStatus(HttpStatus.OK)
-  //   @ResponseBody
-  //   public String getGameWord(@PathVariable String gameToken,
-  //           @RequestHeader("Authorization") String authToken) {
-  //       // Verify auth token
-  //       if (!appService.isUserTokenValid(authToken)) {
-  //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
-  //       }
-
-  //       // Get game session
-  //       GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
-  //       if (gameSession == null) {
-  //           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
-  //       }
-  //       // Get user
-  //       User user = appService.getUserByToken(authToken);
-  //       // Check if game has started
-  //       if (gameSession.getCurrentState() != GameState.STARTED) {
-  //           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
-  //       }
-  //       // Check if user is in game
-  //       if (!appService.isUserInGameSession(user, gameSession)) {
-  //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not a game session player");
-  //       }
-  //       // Check if user is chameleon
-  //       Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
-  //       if (player.getIsChameleon()) {
-  //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chameleon cannot see the word");
-  //       }
-  //       return gameSession.getSecretWord();
-  //   }
-
-  //   //////////////// get game role /////////////////////////
-  // @GetMapping("/game/role/{gameToken}")
-  //   @ResponseStatus(HttpStatus.OK)
-  //   @ResponseBody
-  //   public String getGameRole(@PathVariable String gameToken,
-  //           @RequestHeader("Authorization") String authToken) {
-  //       // Verify auth token
-  //       if (!appService.isUserTokenValid(authToken)) {
-  //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
-  //       }
-
-  //       // Get game session
-  //       GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
-  //       if (gameSession == null) {
-  //           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
-  //       }
-
-  //       // Get user
-  //       User user = appService.getUserByToken(authToken);
-
-  //       // Check if user is in the game session
-  //       if (!appService.isUserInGameSession(user, gameSession)) {
-  //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not a game session player");
-  //       }
-
-  //       // Check if game has started
-  //       if (gameSession.getCurrentState() != GameState.STARTED) {
-  //           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
-  //       }
-
-  //       // Get player and check if they are the chameleon
-  //       Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
-  //       return player.getIsChameleon() ? "CHAMELEON" : "PLAYER";
-  //   }
-
+    //   //////////////////// get game word (only authorized / non-chameleon users can get it) ////////////////////////
+    // @GetMapping("/game/word/{gameToken}")
+    //   @ResponseStatus(HttpStatus.OK)
+    //   @ResponseBody
+    //   public String getGameWord(@PathVariable String gameToken,
+    //           @RequestHeader("Authorization") String authToken) {
+    //       // Verify auth token
+    //       if (!appService.isUserTokenValid(authToken)) {
+    //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    //       }
+    //       // Get game session
+    //       GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    //       if (gameSession == null) {
+    //           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    //       }
+    //       // Get user
+    //       User user = appService.getUserByToken(authToken);
+    //       // Check if game has started
+    //       if (gameSession.getCurrentState() != GameState.STARTED) {
+    //           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
+    //       }
+    //       // Check if user is in game
+    //       if (!appService.isUserInGameSession(user, gameSession)) {
+    //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not a game session player");
+    //       }
+    //       // Check if user is chameleon
+    //       Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
+    //       if (player.getIsChameleon()) {
+    //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chameleon cannot see the word");
+    //       }
+    //       return gameSession.getSecretWord();
+    //   }
+    //   //////////////// get game role /////////////////////////
+    // @GetMapping("/game/role/{gameToken}")
+    //   @ResponseStatus(HttpStatus.OK)
+    //   @ResponseBody
+    //   public String getGameRole(@PathVariable String gameToken,
+    //           @RequestHeader("Authorization") String authToken) {
+    //       // Verify auth token
+    //       if (!appService.isUserTokenValid(authToken)) {
+    //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or missing token");
+    //       }
+    //       // Get game session
+    //       GameSession gameSession = appService.getGameSessionByGameToken(gameToken);
+    //       if (gameSession == null) {
+    //           throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    //       }
+    //       // Get user
+    //       User user = appService.getUserByToken(authToken);
+    //       // Check if user is in the game session
+    //       if (!appService.isUserInGameSession(user, gameSession)) {
+    //           throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User is not a game session player");
+    //       }
+    //       // Check if game has started
+    //       if (gameSession.getCurrentState() != GameState.STARTED) {
+    //           throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game has not started yet");
+    //       }
+    //       // Get player and check if they are the chameleon
+    //       Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
+    //       return player.getIsChameleon() ? "CHAMELEON" : "PLAYER";
+    //   }
     //////////////////// Retrieve participants /////////////////////////
   @GetMapping("/game/players/{gameToken}")
     @ResponseStatus(HttpStatus.OK)
@@ -302,17 +292,17 @@ public class AppController {
 
         // Create DTO
         GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
-        
+
         // Set role
         gameSessionGetDTO.setRole(player.getIsChameleon() ? "CHAMELEON" : "PLAYER");
-        
+
         // Set secret word (empty for chameleon)
         if (gameSession.getCurrentState() == GameState.STARTED && !player.getIsChameleon()) {
             gameSessionGetDTO.setSecretWord(gameSession.getSecretWord());
         } else {
             gameSessionGetDTO.setSecretWord("");
         }
-        
+
         // Set current turn
         if (gameSession.getCurrentPlayerTurn() != null) {
             gameSessionGetDTO.setCurrentTurn(gameSession.getCurrentPlayerTurn().getUser().getUsername());
