@@ -6,5 +6,6 @@ public enum GameState {
     READY_FOR_VOTING,
     VOTING,
     CHAMELEON_TURN,
-    FINISHED
+    CHAMELEON_WIN,
+    PLAYERS_WIN
 }

@@ -360,4 +360,56 @@ public class GameSessionServiceTest {
         assertEquals(testGameSession.getCurrentState(), GameState.READY_FOR_VOTING);
         assertEquals(result.getActionType(), testPlayerAction.getActionType());
     }
+
+    @Test
+    public void handleChameleonGuess_success_wins() throws Exception {
+        // given
+        testPlayerAction.setActionType("CHAMELEON_GUESS");
+        testPlayerAction.setActionContent("secret_word");
+        testGameSession.setCurrentState(GameState.CHAMELEON_TURN);
+        testGameSession.setSecretWord("secret_word");
+
+        // when
+        PlayerActionResult result = gameSessionService.handleChameleonGuess(testPlayer, testPlayerAction, testGameSession);
+        // then
+        Mockito.verify(gameSessionRepository, Mockito.times(1)).save(testGameSession);
+        assertEquals(testGameSession.getCurrentState(), GameState.CHAMELEON_WIN);
+        assertEquals(result.getActionType(), testPlayerAction.getActionType());
+        assertEquals(result.getActionContent(), testPlayerAction.getActionContent());
+        assertEquals(result.getActionResult(), "CHAMELEON_WIN");
+    }
+
+    @Test
+    public void handleChameleonGuess_success_looses() throws Exception {
+        // given
+        testPlayerAction.setActionType("CHAMELEON_GUESS");
+        testPlayerAction.setActionContent("wrong_word");
+        testGameSession.setCurrentState(GameState.CHAMELEON_TURN);
+        testGameSession.setSecretWord("secret_word");
+
+        // when
+        PlayerActionResult result = gameSessionService.handleChameleonGuess(testPlayer, testPlayerAction, testGameSession);
+        // then
+        Mockito.verify(gameSessionRepository, Mockito.times(1)).save(testGameSession);
+        assertEquals(testGameSession.getCurrentState(), GameState.PLAYERS_WIN);
+        assertEquals(result.getActionType(), testPlayerAction.getActionType());
+        assertEquals(result.getActionContent(), testPlayerAction.getActionContent());
+        assertEquals(result.getActionResult(), "PLAYERS_WIN");
+    }
+
+    @Test
+    public void handleChameleonGuess_fail() throws Exception {
+        // given
+        testPlayerAction.setActionType("CHAMELEON_GUESS");
+        testPlayerAction.setActionContent("secret_word");
+        testGameSession.setCurrentState(GameState.VOTING);
+        testGameSession.setSecretWord("secret_word");
+
+        // when
+        Exception exception = assertThrows(Exception.class, () -> {
+            gameSessionService.handleChameleonGuess(testPlayer, testPlayerAction, testGameSession);
+        });
+        // then
+        assertEquals("Game session is not in a valid state for a chameleon guess", exception.getMessage());
+    }
 }

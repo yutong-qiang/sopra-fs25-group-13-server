@@ -65,16 +65,16 @@ public class GameSessionService {
             throw new IllegalStateException("Game session is not in a valid state to start");
         }
         List<Player> players = playerRepository.findByGameSession(gameSession);
-        
+
         if (players.size() < 1) {
             throw new IllegalStateException("Not enough players to start the game");
         }
         gameSession.setCurrentState(GameState.STARTED);
-        
+
         // Generate and set the secret word
         String secretWord = wordService.getRandomWord();
         gameSession.setSecretWord(secretWord);
-        
+
         // generate random player order list
         List<Integer> playerOrder = IntStream.range(0, players.size())
                 .boxed()
@@ -164,7 +164,7 @@ public class GameSessionService {
             gameSession.setCurrentState(GameState.CHAMELEON_TURN);
         } else {
             result.setActionResult("CHAMELEON_WON");
-            gameSession.setCurrentState(GameState.FINISHED);
+            gameSession.setCurrentState(GameState.CHAMELEON_WIN);
         }
         gameSessionRepository.save(gameSession);
         return result;
@@ -194,7 +194,7 @@ public class GameSessionService {
 
         hint = hint.toLowerCase();
         String secretWord = gameSession.getSecretWord().toLowerCase();
-        
+
         // check if the hint is a substring of the secret word
         if (hint.contains(secretWord)) {
             throw new IllegalStateException("Hint cannot contain parts of the secret word");
@@ -217,11 +217,40 @@ public class GameSessionService {
         return result;
     }
 
+    public PlayerActionResult handleChameleonGuess(Player player, PlayerAction action, GameSession gameSession) {
+        if (gameSession.getCurrentState() != GameState.CHAMELEON_TURN) {
+            throw new IllegalStateException("Game session is not in a valid state for a chameleon guess");
+        }
+        String guess = action.getActionContent();
+        // check if the guess is null or empty
+        if (guess == null || guess.trim().isEmpty()) {
+            throw new IllegalStateException("Hint cannot be empty");
+        }
+        // check that guess contains only one word
+        if (guess.split("\\s+").length > 1) {
+            throw new IllegalStateException("Hint must be a single word");
+        }
+
+        guess = guess.toLowerCase();
+        String secretWord = gameSession.getSecretWord().toLowerCase();
+
+        PlayerActionResult result = new PlayerActionResult();
+        result.setActionType(action.getActionType());
+        result.setActionContent(action.getActionContent());
+        boolean chameleon_win = guess.equals(secretWord);
+        result.setActionResult(chameleon_win ? "CHAMELEON_WIN" : "PLAYERS_WIN");
+
+        gameSession.setCurrentState(chameleon_win ? GameState.CHAMELEON_WIN : GameState.PLAYERS_WIN);
+        gameSessionRepository.save(gameSession);
+
+        return result;
+    }
+
     public PlayerActionResult handlePlayerAction(User user, PlayerAction action, GameSession gameSession) throws Exception {
         log.info("Handling player action: {}", action.getActionType());
         log.info("User attempting action - ID: {}, Username: {}", user.getId(), user.getUsername());
         log.info("Game creator - ID: {}, Username: {}", gameSession.getCreator().getId(), gameSession.getCreator().getUsername());
-        
+
         // get the player performing the action
         Player player = playerRepository.findByUserAndGameSession(user, gameSession).orElseThrow(
                 () -> new Exception("User not part of the game session")
@@ -257,6 +286,9 @@ public class GameSessionService {
             }
             case "VOTE" -> {
                 return doVote(player, action, gameSession);
+            }
+            case "CHAMELEON_GUESS" -> {
+                return handleChameleonGuess(player, action, gameSession);
             }
             default -> {
                 throw new IllegalArgumentException("Invalid action type: " + action.getActionType());
