@@ -119,6 +119,10 @@ public class AppController {
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public GameSessionGetDTO createGameSession(@RequestHeader("Authorization") String authToken) {
+        // verify authToken
+        if (!appService.isUserTokenValid(authToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+        }
         // retrieve user from authToken
         User user = appService.getUserByToken(authToken);
         // create game session
