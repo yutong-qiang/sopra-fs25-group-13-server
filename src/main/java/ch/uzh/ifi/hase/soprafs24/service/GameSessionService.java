@@ -66,7 +66,7 @@ public class GameSessionService {
         }
         List<Player> players = playerRepository.findByGameSession(gameSession);
         
-        if (players.size() < 4) {
+        if (players.size() < 1) {
             throw new IllegalStateException("Not enough players to start the game");
         }
         gameSession.setCurrentState(GameState.STARTED);
@@ -174,8 +174,9 @@ public class GameSessionService {
         if (gameSession.getCurrentState() != GameState.STARTED) {
             throw new IllegalStateException("Game session is not in a valid state to give a hint");
         }
+        System.out.println("Current turn: " + gameSession.getCurrentPlayerTurn().getId() + " player: " + player.getId() + " same?: " + (gameSession.getCurrentPlayerTurn() == player));
         // check if this is the player turn
-        if (gameSession.getCurrentPlayerTurn() != player) {
+        if (!gameSession.getCurrentPlayerTurn().getId().equals(player.getId())) {
             throw new IllegalStateException("Wrong player turn");
         }
 
