@@ -9,12 +9,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameState;
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
@@ -38,16 +43,21 @@ public class GameSessionService {
     private final GameSessionRepository gameSessionRepository;
     private final PlayerRepository playerRepository;
     private final WordService wordService;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final SimpMessagingTemplate messagingTemplate;
+    private final Set<String> votingEndedSessions = ConcurrentHashMap.newKeySet();
 
     @Autowired
 
     public GameSessionService(
             GameSessionRepository gameSessionRepository,
             PlayerRepository playerRepository,
-            WordService wordService) {
+            WordService wordService,
+            SimpMessagingTemplate messagingTemplate) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
         this.wordService = wordService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     private static final Set<String> ADMIN_ACTIONS = Set.of(
@@ -66,7 +76,9 @@ public class GameSessionService {
         }
         List<Player> players = playerRepository.findByGameSession(gameSession);
 
+    //////////// remember to change to 4 players ///////////////////
         if (players.size() < 1) {
+    ///////////////////////////////////////////////////////////////////
             throw new IllegalStateException("Not enough players to start the game");
         }
         gameSession.setCurrentState(GameState.STARTED);
@@ -110,9 +122,57 @@ public class GameSessionService {
         }
         gameSession.setCurrentState(GameState.VOTING);
         gameSessionRepository.save(gameSession);
+
+        int votingDuration = 30;
+        long votingStartTime = System.currentTimeMillis();
+
         PlayerActionResult result = new PlayerActionResult();
         result.setActionType(action.getActionType());
+        result.setActionContent("{\"votingStartTime\": " + votingStartTime + ", \"votingDuration\": " + votingDuration + "}");
+        scheduler.schedule(() -> endVoting(gameSession.getGameToken()), votingDuration, TimeUnit.SECONDS);
         return result;
+    }
+
+    public void endVoting(String gameToken) {
+        if (! votingEndedSessions.add(gameToken)) {
+            return;
+        }
+
+        GameSession gameSession = gameSessionRepository.findByGameToken(gameToken).orElse(null);
+        if (gameSession == null || gameSession.getCurrentState() != GameState.VOTING) {
+            return;
+        }
+
+        List<Player> players = playerRepository.findByGameSession(gameSession);
+
+        Map<Player, Long> voteCount = players.stream()
+            .filter(p -> p.getCurrentAccusedPlayer() != null)
+            .map(Player::getCurrentAccusedPlayer)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        Player mostVotedPlayer = null;
+
+        if (!voteCount.isEmpty()) {
+            long maxVotes = voteCount.values().stream().max(Long::compareTo).orElse(0L);
+            List<Player> mostVoted = voteCount.entrySet().stream()
+                .filter(e -> e.getValue() == maxVotes)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+            mostVotedPlayer = mostVoted.get(ThreadLocalRandom.current().nextInt(mostVoted.size()));
+        }
+
+        PlayerActionResult result = new PlayerActionResult();
+        result.setActionType("END_VOTING");
+
+        if (mostVotedPlayer != null && mostVotedPlayer.getIsChameleon()) {
+            result.setActionResult("CHAMELEON_FOUND");
+            gameSession.setCurrentState(GameState.CHAMELEON_TURN);
+        } else {
+            result.setActionResult("CHAMELEON_WON");
+            gameSession.setCurrentState(GameState.CHAMELEON_WIN);
+        }
+        gameSessionRepository.save(gameSession);
+        messagingTemplate.convertAndSend("/game/topic/" + gameToken, result);
     }
 
     public PlayerActionResult doVote(Player player, PlayerAction action, GameSession gameSession) {
@@ -126,48 +186,52 @@ public class GameSessionService {
                 .filter(p -> p.getUser().getUsername().equals(accused_username))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Accused player not found"));
-        if (accusedPlayer == player) {
-            throw new IllegalArgumentException("Player cannot vote for themselves");
-        }
+        // if (accusedPlayer == player) {
+        //     throw new IllegalArgumentException("Player cannot vote for themselves");
+        // }
         player.setCurrentAccusedPlayer(accusedPlayer);
         playerRepository.save(player);
         // check if all players have voted
         boolean allPlayersVoted = players.stream()
                 .allMatch(p -> p.getCurrentAccusedPlayer() != null);
-        if (!allPlayersVoted) {
-            // return empty player action result
-            PlayerActionResult result = new PlayerActionResult();
-            result.setActionType(action.getActionType());
-            return result;
+        
+        if (allPlayersVoted) {
+            endVoting(gameSession.getGameToken());
         }
-        // all players have voted, count the votes
-        Map<Player, Long> voteCount = players.stream()
-                .map(Player::getCurrentAccusedPlayer)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        long maxVotes = voteCount.values().stream()
-                .max(Long::compareTo).orElse(0L);
-
-        List<Player> mostVotedPlayersList = voteCount.entrySet().stream()
-                .filter(entry -> entry.getValue() == maxVotes)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-        // in case of a draw, pick a random player as the most voted one
-        Player mostVotedPlayer = mostVotedPlayersList.get(
-                ThreadLocalRandom.current().nextInt(mostVotedPlayersList.size())
-        );
-        // handle votation outcome
+        // return empty player action result
         PlayerActionResult result = new PlayerActionResult();
         result.setActionType(action.getActionType());
-        if (mostVotedPlayer.getIsChameleon()) {
-            result.setActionResult("CHAMELEON_FOUND");
-            gameSession.setCurrentState(GameState.CHAMELEON_TURN);
-        } else {
-            result.setActionResult("CHAMELEON_WON");
-            gameSession.setCurrentState(GameState.CHAMELEON_WIN);
-        }
-        gameSessionRepository.save(gameSession);
         return result;
+
+        // all players have voted, count the votes
+        // Map<Player, Long> voteCount = players.stream()
+        //         .map(Player::getCurrentAccusedPlayer)
+        //         .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        // long maxVotes = voteCount.values().stream()
+        //         .max(Long::compareTo).orElse(0L);
+
+        // List<Player> mostVotedPlayersList = voteCount.entrySet().stream()
+        //         .filter(entry -> entry.getValue() == maxVotes)
+        //         .map(Map.Entry::getKey)
+        //         .collect(Collectors.toList());
+        // // in case of a draw, pick a random player as the most voted one
+        // Player mostVotedPlayer = mostVotedPlayersList.get(
+        //         ThreadLocalRandom.current().nextInt(mostVotedPlayersList.size())
+        // );
+        // // handle votation outcome
+        // PlayerActionResult result = new PlayerActionResult();
+        // result.setActionType(action.getActionType());
+        // if (mostVotedPlayer.getIsChameleon()) {
+        //     result.setActionResult("CHAMELEON_FOUND");
+        //     gameSession.setCurrentState(GameState.CHAMELEON_TURN);
+        // } else {
+        //     result.setActionResult("CHAMELEON_WON");
+        //     gameSession.setCurrentState(GameState.CHAMELEON_WIN);
+        // }
+        // gameSessionRepository.save(gameSession);
+        // messagingTemplate.convertAndSend("/game/topic/" + gameSession.getGameToken(), result);
+        // return result;
     }
 
     public PlayerActionResult giveHint(Player player, PlayerAction action, GameSession gameSession) {
