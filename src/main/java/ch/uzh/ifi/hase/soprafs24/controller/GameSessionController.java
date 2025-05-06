@@ -69,7 +69,9 @@ public class GameSessionController {
         try {
             PlayerActionResult result = gameSessionService.handlePlayerAction(user, playerAction, gameSession);
             // log.info("Action processed successfully");
-            messagingTemplate.convertAndSend("/game/topic/" + gsToken, result);
+            if (result != null) {
+                messagingTemplate.convertAndSend("/game/topic/" + gsToken, result);
+            }
         } catch (Exception e) {
             // log.error("Error processing action: {}", e.getMessage());
             GameSessionErrorMessage errorMessage = new GameSessionErrorMessage();

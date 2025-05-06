@@ -198,7 +198,6 @@ public class GameSessionServiceTest {
     //     Player player1 = new Player();
     //     player1.setUser(new User());
     //     player1.getUser().setUsername("user1");
-
     //     List<Player> dummyPlayers = List.of(player1);
     //     // we simulate a vote from player1 to player1
     //     testPlayerAction.setActionType("VOTE");
@@ -212,7 +211,6 @@ public class GameSessionServiceTest {
     //     });
     //     assertEquals("Player cannot vote for themselves", exception.getMessage());
     // }
-
     /**
      * Test vote from player. Not all players have voted, so an empty action
      * result is returned.
@@ -253,6 +251,7 @@ public class GameSessionServiceTest {
 
         Mockito.verify(playerRepository, Mockito.times(1)).save(player3);
         assertEquals(result.getActionType(), testPlayerAction.getActionType());
+        assertEquals(result.getActionContent(), testPlayerAction.getActionContent());
         assertTrue(result.getActionResult() == null);
     }
 
@@ -260,93 +259,88 @@ public class GameSessionServiceTest {
      * Test vote from player when all players have voted and the most voted
      * player is not the chameleon.
      */
-    // @Test
-    // public void doVote_chameleon_not_found() throws Exception {
-    //     // given
-    //     Player player1 = new Player();
-    //     player1.setUser(new User());
-    //     player1.getUser().setUsername("user1");
-    //     player1.setIsChameleon(false);
+    @Test
+    public void doVote_chameleon_not_found() throws Exception {
+        // given
+        Player player1 = new Player();
+        player1.setUser(new User());
+        player1.getUser().setUsername("user1");
+        player1.setIsChameleon(false);
+        Player player2 = new Player();
+        player2.setUser(new User());
+        player2.getUser().setUsername("user2");
+        player2.setIsChameleon(true);
+        Player player3 = new Player();
+        player3.setUser(new User());
+        player3.getUser().setUsername("user3");
+        player3.setIsChameleon(false);
+        player1.setCurrentAccusedPlayer(player2);
+        player2.setCurrentAccusedPlayer(player1);
+        List<Player> dummyPlayers = List.of(
+                player1,
+                player2,
+                player3
+        );
+        // we simulate a vote from player3 to player1
+        testPlayerAction.setActionType("VOTE");
+        testPlayerAction.setActionContent("user1");
+        // get game session in voting state
+        testGameSession.setCurrentState(GameState.READY_FOR_VOTING);
+        PlayerAction start_action = new PlayerAction();
+        start_action.setActionType("START_VOTING");
+        gameSessionService.startVoting(start_action, testGameSession);
 
-    //     Player player2 = new Player();
-    //     player2.setUser(new User());
-    //     player2.getUser().setUsername("user2");
-    //     player2.setIsChameleon(true);
-
-    //     Player player3 = new Player();
-    //     player3.setUser(new User());
-    //     player3.getUser().setUsername("user3");
-    //     player3.setIsChameleon(false);
-
-    //     player1.setCurrentAccusedPlayer(player2);
-    //     player2.setCurrentAccusedPlayer(player1);
-
-    //     List<Player> dummyPlayers = List.of(
-    //             player1,
-    //             player2,
-    //             player3
-    //     );
-
-    //     // we simulate a vote from player3 to player1
-    //     testPlayerAction.setActionType("VOTE");
-    //     testPlayerAction.setActionContent("user1");
-    //     testGameSession.setCurrentState(GameState.VOTING);
-
-    //     Mockito.when(playerRepository.findByGameSession(testGameSession)).thenReturn(dummyPlayers);
-
-    //     // then
-    //     PlayerActionResult result = gameSessionService.doVote(player3, testPlayerAction, testGameSession);
-
-    //     Mockito.verify(playerRepository, Mockito.times(1)).save(player3);
-    //     assertEquals(result.getActionType(), testPlayerAction.getActionType());
-    //     assertEquals(result.getActionResult(), "CHAMELEON_WON");
-    // }
+        Mockito.when(playerRepository.findByGameSession(testGameSession)).thenReturn(dummyPlayers);
+        // then
+        PlayerActionResult result = gameSessionService.doVote(player3, testPlayerAction, testGameSession);
+        Mockito.verify(playerRepository, Mockito.times(1)).save(player3);
+        assertEquals(result.getActionType(), "END_VOTING");
+        assertEquals(result.getActionResult(), "CHAMELEON_WON");
+    }
 
     /**
      * Test vote from player when all players have voted and the most voted
      * player is the chameleon.
      */
-    // @Test
-    // public void doVote_chameleon_found() throws Exception {
-    //     // given
-    //     Player player1 = new Player();
-    //     player1.setUser(new User());
-    //     player1.getUser().setUsername("user1");
-    //     player1.setIsChameleon(true);
+    @Test
+    public void doVote_chameleon_found() throws Exception {
+        // given
+        Player player1 = new Player();
+        player1.setUser(new User());
+        player1.getUser().setUsername("user1");
+        player1.setIsChameleon(true);
+        Player player2 = new Player();
+        player2.setUser(new User());
+        player2.getUser().setUsername("user2");
+        player2.setIsChameleon(false);
+        Player player3 = new Player();
+        player3.setUser(new User());
+        player3.getUser().setUsername("user3");
+        player3.setIsChameleon(false);
+        player1.setCurrentAccusedPlayer(player2);
+        player2.setCurrentAccusedPlayer(player1);
+        List<Player> dummyPlayers = List.of(
+                player1,
+                player2,
+                player3
+        );
+        // we simulate a vote from player3 to player1
+        testPlayerAction.setActionType("VOTE");
+        testPlayerAction.setActionContent("user1");
 
-    //     Player player2 = new Player();
-    //     player2.setUser(new User());
-    //     player2.getUser().setUsername("user2");
-    //     player2.setIsChameleon(false);
+        // get game session in voting state
+        testGameSession.setCurrentState(GameState.READY_FOR_VOTING);
+        PlayerAction start_action = new PlayerAction();
+        start_action.setActionType("START_VOTING");
+        gameSessionService.startVoting(start_action, testGameSession);
 
-    //     Player player3 = new Player();
-    //     player3.setUser(new User());
-    //     player3.getUser().setUsername("user3");
-    //     player3.setIsChameleon(false);
-
-    //     player1.setCurrentAccusedPlayer(player2);
-    //     player2.setCurrentAccusedPlayer(player1);
-
-    //     List<Player> dummyPlayers = List.of(
-    //             player1,
-    //             player2,
-    //             player3
-    //     );
-
-    //     // we simulate a vote from player3 to player1
-    //     testPlayerAction.setActionType("VOTE");
-    //     testPlayerAction.setActionContent("user1");
-    //     testGameSession.setCurrentState(GameState.VOTING);
-
-    //     Mockito.when(playerRepository.findByGameSession(testGameSession)).thenReturn(dummyPlayers);
-
-    //     // then
-    //     PlayerActionResult result = gameSessionService.doVote(player3, testPlayerAction, testGameSession);
-
-    //     Mockito.verify(playerRepository, Mockito.times(1)).save(player3);
-    //     assertEquals(result.getActionType(), testPlayerAction.getActionType());
-    //     assertEquals(result.getActionResult(), "CHAMELEON_FOUND");
-    // }
+        Mockito.when(playerRepository.findByGameSession(testGameSession)).thenReturn(dummyPlayers);
+        // then
+        PlayerActionResult result = gameSessionService.doVote(player3, testPlayerAction, testGameSession);
+        Mockito.verify(playerRepository, Mockito.times(1)).save(player3);
+        assertEquals(result.getActionType(), "END_VOTING");
+        assertEquals(result.getActionResult(), "CHAMELEON_FOUND");
+    }
 
     public void giveHint_success() throws Exception {
         // given
