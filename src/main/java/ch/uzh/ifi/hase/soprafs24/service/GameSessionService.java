@@ -92,6 +92,8 @@ public class GameSessionService {
                 .boxed()
                 .collect(Collectors.toList());
         Collections.shuffle(playerOrder);
+        log.info("Player IDs: {}", players.stream().map(Player::getId).collect(Collectors.toList()));
+        log.info("Player order: {}", playerOrder);
         // generate random player roles
         List<Boolean> playerRoles = new ArrayList<>(Collections.nCopies(players.size(), false));
         playerRoles.set(0, true);
@@ -103,12 +105,13 @@ public class GameSessionService {
             if (i < playerRoles.size() - 1) {
                 Player nextPlayer = players.get(playerOrder.get(i + 1));
                 currentPlayer.setNextPlayer(nextPlayer);
+                log.info("Set next player for {}: {}", currentPlayer.getId(), nextPlayer.getId());
             }
             currentPlayer.setIsChameleon(playerRoles.get(i));
             playerRepository.save(currentPlayer);
         }
         // set the first player as the current player turn
-        gameSession.setCurrentPlayerTurn(players.get(0));
+        gameSession.setCurrentPlayerTurn(players.get(playerOrder.get(0)));
         // save and return
         gameSessionRepository.save(gameSession);
         PlayerActionResult result = new PlayerActionResult();
@@ -216,7 +219,6 @@ public class GameSessionService {
         if (gameSession.getCurrentState() != GameState.STARTED) {
             throw new IllegalStateException("Game session is not in a valid state to give a hint");
         }
-        System.out.println("Current turn: " + gameSession.getCurrentPlayerTurn().getId() + " player: " + player.getId() + " same?: " + (gameSession.getCurrentPlayerTurn() == player));
         // check if this is the player turn
         if (!gameSession.getCurrentPlayerTurn().getId().equals(player.getId())) {
             throw new IllegalStateException("Wrong player turn");
@@ -250,6 +252,9 @@ public class GameSessionService {
         // nextPlayer is null -> all players have given their hint, time to vote!
         if (nextPlayer == null) {
             gameSession.setCurrentState(GameState.READY_FOR_VOTING);
+            log.info("All players have given their hints, ready for voting");
+        } else {
+            log.info("Next player: {}", nextPlayer.getId());
         }
         gameSessionRepository.save(gameSession);
         // return the result
@@ -297,7 +302,7 @@ public class GameSessionService {
         Player player = playerRepository.findByUserAndGameSession(user, gameSession).orElseThrow(
                 () -> new Exception("User not part of the game session")
         );
-        log.info("Found player in game session");
+        log.info("Found player in game session, ID: {}, Username: {}", player.getId(), player.getUser().getUsername());
 
         // in case of an admin action, check if the user is the creator
         if (isAdminAction(action) && !gameSession.getCreator().equals(user)) {
