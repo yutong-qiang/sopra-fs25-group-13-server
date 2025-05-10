@@ -539,7 +539,7 @@ public class AppControllerTest {
         given(appService.getUserByToken(authToken)).willReturn(creator);
 
         // when/then
-        MockHttpServletRequestBuilder deleteRequest = delete("/game/" + gameToken)
+        MockHttpServletRequestBuilder deleteRequest = delete("/game/end/" + gameToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", authToken);
 
@@ -559,7 +559,7 @@ public class AppControllerTest {
 
         given(appService.isUserTokenValid(invalidToken)).willReturn(false);
 
-        MockHttpServletRequestBuilder deleteRequest = delete("/game/" + gameToken)
+        MockHttpServletRequestBuilder deleteRequest = delete("/game/end/" + gameToken)
                 .header("Authorization", invalidToken);
 
         mockMvc.perform(deleteRequest)
@@ -583,7 +583,7 @@ public class AppControllerTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized to end game"))
                 .when(appService).endGameSession(gameToken, notCreator);
 
-        MockHttpServletRequestBuilder deleteRequest = delete("/game/" + gameToken)
+        MockHttpServletRequestBuilder deleteRequest = delete("/game/end/" + gameToken)
                 .header("Authorization", authToken);
 
         mockMvc.perform(deleteRequest)

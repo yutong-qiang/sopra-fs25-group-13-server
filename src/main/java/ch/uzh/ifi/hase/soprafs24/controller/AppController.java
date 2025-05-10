@@ -135,7 +135,7 @@ public class AppController {
     }
 
     ////////////////////// end game session ////////////////////////
-  @DeleteMapping("/game/{gameToken}")
+  @DeleteMapping("/game/end/{gameToken}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ResponseBody
     public void endGameSession(@PathVariable String gameToken,
