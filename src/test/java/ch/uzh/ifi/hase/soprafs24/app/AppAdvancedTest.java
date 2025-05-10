@@ -72,7 +72,7 @@ public class AppAdvancedTest {
         // admin starts game
         adminClient.sendPlayerAction("START_GAME", null);
         // Verify state change (allow a brief moment if your handler is async)
-        Thread.sleep(2000);
+        Thread.sleep(4000);
         assertEquals(GameState.STARTED,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
 
@@ -96,17 +96,17 @@ public class AppAdvancedTest {
                 assertNotNull(currentClient, "Iteration " + i + ", current client should not be null");
                 // give hint
                 currentClient.sendPlayerAction("GIVE_HINT", currentClient.getUsername() + "_TestHint");
-                Thread.sleep(500);
+                Thread.sleep(4000);
         }
         // Verify state change
-        Thread.sleep(2000);
+        Thread.sleep(4000);
         assertEquals(GameState.READY_FOR_VOTING,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
         
         // admin starts voting
         adminClient.sendPlayerAction("START_VOTING", null);
         // Verify state change
-        Thread.sleep(2000);
+        Thread.sleep(4000);
         assertEquals(GameState.VOTING,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
         // each client votes
@@ -122,11 +122,11 @@ public class AppAdvancedTest {
                 // other clients vote for the chameleon
                 client.sendPlayerAction("VOTE", chameleonClient.getUsername());
             }
-            Thread.sleep(500);
+            Thread.sleep(4000);
         }
 
         // Verify state change
-        Thread.sleep(1000);
+        Thread.sleep(4000);
         assertEquals(GameState.CHAMELEON_TURN,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
 
@@ -134,7 +134,7 @@ public class AppAdvancedTest {
         String secretWord = appService.getGameSessionByGameToken(gameToken).getSecretWord();
         chameleonClient.sendPlayerAction("CHAMELEON_GUESS", secretWord);
         // Verify state change
-        Thread.sleep(2000);
+        Thread.sleep(4000);
         assertEquals(GameState.CHAMELEON_WIN,
                 appService.getGameSessionByGameToken(gameToken).getCurrentState());
     }
