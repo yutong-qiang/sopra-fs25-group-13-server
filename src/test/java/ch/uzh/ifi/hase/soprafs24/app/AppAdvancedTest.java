@@ -36,7 +36,7 @@ public class AppAdvancedTest {
     private TwilioService twilioService;
 
     @Test
-    public void register_create_start_game_session_success() throws Exception {
+    public void emulate_full_game_chameleon_wins() throws Exception {
         // Register four users
         List<MockClient> clients;
         clients = new ArrayList<>();

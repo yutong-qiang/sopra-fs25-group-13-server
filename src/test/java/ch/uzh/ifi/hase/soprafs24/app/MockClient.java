@@ -170,6 +170,8 @@ public class MockClient {
         );
         gameSession = result.getBody();
         assertNotNull(gameSession);
+        // log the current turn
+        System.out.println(username + " updated game state. Current turn: " + gameSession.getCurrentTurn());
     }
 
     private void handleWsMessage(PlayerActionResult playActionResult) {
@@ -183,8 +185,8 @@ public class MockClient {
             }
             break;
             case "START_VOTING":
-            if (!GameState.READY_FOR_VOTING.equals(gameSession.getGameState())) {
-            System.out.println(username + ": Error: Expected game state READY_FOR_VOTING but was " + gameSession.getGameState());
+            if (!GameState.VOTING.equals(gameSession.getGameState())) {
+            System.out.println(username + ": Error: Expected game state VOTING but was " + gameSession.getGameState());
             }
             break;
         }
