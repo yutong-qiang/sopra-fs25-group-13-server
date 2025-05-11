@@ -160,4 +160,22 @@ public class AppServiceTest {
         verify(gameSessionRepository).flush();
     }
 
+    @Test
+    public void storeAvatar_validInputs_success() {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        byte[] avatar = new byte[]{1, 2, 3};
+
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // when
+        appService.storeAvatar(user, avatar);
+
+        // then
+        verify(userRepository).save(user);
+        assertEquals(avatar, user.getAvatar());
+    }
+
 }

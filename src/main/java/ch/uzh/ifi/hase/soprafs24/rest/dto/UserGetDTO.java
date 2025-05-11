@@ -9,6 +9,7 @@ public class UserGetDTO {
   private String username;
   private String token;
   private int wins;
+  private byte[] avatar;
 
   public Long getId() {
     return id;
@@ -17,14 +18,6 @@ public class UserGetDTO {
   public void setId(Long id) {
     this.id = id;
   }
-
-  // public String getName() {
-  //   return name;
-  // }
-
-  // public void setName(String name) {
-  //   this.name = name;
-  // }
 
   public String getUsername() {
     return username;
@@ -49,5 +42,13 @@ public class UserGetDTO {
   public void setWins(int wins) {
     this.wins = wins;
   }
+
+    public byte[] getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(byte[] avatar) {
+        this.avatar = avatar;
+    }
 
 }

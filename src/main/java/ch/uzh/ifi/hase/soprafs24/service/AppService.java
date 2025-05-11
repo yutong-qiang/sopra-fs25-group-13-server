@@ -273,4 +273,9 @@ public class AppService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
   }
 
+  public void storeAvatar(User user, byte[] avatar) {
+    user.setAvatar(avatar);
+    userRepository.save(user);
+  }
+
 }

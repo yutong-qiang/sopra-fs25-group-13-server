@@ -14,8 +14,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -896,6 +898,54 @@ public class AppControllerTest {
 //         mockMvc.perform(getRequest)
 //                 .andExpect(status().isBadRequest());
 //     }
+    /// POST /user/avatar
+        /// successful upload of user avatar
+        /// 200 OK
+    @Test
+    public void uploadAvatar_success() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setToken("validToken");
+
+        byte[] avatar = "testAvatar".getBytes();
+        MockMultipartFile avatarFile = new MockMultipartFile("file", "avatar.jpeg", "image/jpeg", avatar);
+
+        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+
+        // when/then
+        MockHttpServletRequestBuilder postRequest = MockMvcRequestBuilders.multipart("/user/avatar")
+                .file(avatarFile)
+                .header("Authorization", "validToken");
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isOk());
+    }
+
+    /// POST /user/avatar
+                /// fail to upload avatar due to wrong file type (png)
+                /// 415 Unsupported Media Type
+    @Test
+    public void uploadAvatar_invalidFileType() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setToken("validToken");
+        byte[] avatar = "testAvatar".getBytes();
+        MockMultipartFile avatarFile = new MockMultipartFile("file", "avatar.png", "image/png", avatar);
+        given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
+        given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
+        // when/then
+        MockHttpServletRequestBuilder postRequest = MockMvcRequestBuilders.multipart("/user/avatar")
+                .file(avatarFile)
+                .header("Authorization", "validToken");
+        mockMvc.perform(postRequest)
+                .andExpect(status().isUnsupportedMediaType());
+    }
+
     /**
      * Helper Method to convert userPostDTO into a JSON string such that the
      * input can be processed Input will look like this: {"name": "Test User",
@@ -911,5 +961,9 @@ public class AppControllerTest {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     String.format("The request body could not be created.%s", e.toString()));
         }
+    }
+
+    private Object multipart(String useravatar) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

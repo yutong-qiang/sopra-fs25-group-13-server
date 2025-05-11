@@ -1,10 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,9 +14,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameState;
@@ -315,4 +319,34 @@ public class AppController {
         return gameSessionGetDTO;
     }
 
+    @PostMapping("user/avatar")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void uploadAvatar(
+            @RequestHeader("Authorization") String authToken,
+            @RequestParam("file") MultipartFile file) {
+        // verify authToken
+        if (!appService.isUserTokenValid(authToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+        }
+        User user = appService.getUserByToken(authToken);
+
+        String ct = file.getContentType();
+        if (!MediaType.IMAGE_JPEG_VALUE.equals(ct)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Only JPEG allowed"
+            );
+        }
+
+        try {
+            appService.storeAvatar(user, file.getBytes());
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to store avatar",
+                    e
+            );
+        }
+    }
 }
