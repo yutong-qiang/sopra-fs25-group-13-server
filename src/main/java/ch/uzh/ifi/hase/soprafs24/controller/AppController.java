@@ -142,16 +142,23 @@ public class AppController {
   @DeleteMapping("/game/end/{gameToken}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @ResponseBody
-    public void endGameSession(@PathVariable String gameToken,
-            @RequestHeader("Authorization") String authToken) {
+    public void endGameSession(
+            @PathVariable String gameToken,
+            @RequestHeader("Authorization") String authToken,
+            @RequestParam Long winnerId
+    ) {
         // verify authToken
         if (!appService.isUserTokenValid(authToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
         }
         // get user      
         User user = appService.getUserByToken(authToken);
+        // get winner
+        User winner = appService.getUserById(winnerId);
         // end game session
-        appService.endGameSession(gameToken, user);
+        appService.endGameSession(gameToken, user, winner);
+        System.out.println("Incrementing rounds for user: " + user.getUsername());
+        System.out.println("Incrementing wins for winner: " + winner.getUsername());
     }
 
     /////////////// join game session ////////////////////////

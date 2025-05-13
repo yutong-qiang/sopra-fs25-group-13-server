@@ -9,6 +9,7 @@ public class UserGetDTO {
   private String username;
   private String token;
   private int wins;
+  private int roundsPlayed;
   private byte[] avatar;
 
   public Long getId() {
@@ -41,6 +42,14 @@ public class UserGetDTO {
 
   public void setWins(int wins) {
     this.wins = wins;
+  }
+
+  public int getRoundsPlayed() {
+    return roundsPlayed;
+  }
+
+  public void setRoundsPlayed(int roundsPlayed) {
+    this.roundsPlayed = roundsPlayed;
   }
 
     public byte[] getAvatar() {

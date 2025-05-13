@@ -43,6 +43,7 @@ public class GameSessionService {
     private final GameSessionRepository gameSessionRepository;
     private final PlayerRepository playerRepository;
     private final WordService wordService;
+    private final AppService appService;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final SimpMessagingTemplate messagingTemplate;
     private final Set<String> votingSessions = ConcurrentHashMap.newKeySet();
@@ -53,10 +54,12 @@ public class GameSessionService {
             GameSessionRepository gameSessionRepository,
             PlayerRepository playerRepository,
             WordService wordService,
+            AppService appService,
             SimpMessagingTemplate messagingTemplate) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
         this.wordService = wordService;
+        this.appService = appService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -290,6 +293,7 @@ public class GameSessionService {
         gameSession.setCurrentState(chameleon_win ? GameState.CHAMELEON_WIN : GameState.PLAYERS_WIN);
         gameSessionRepository.save(gameSession);
 
+        endGame(gameSession);
         return result;
     }
 
@@ -341,5 +345,26 @@ public class GameSessionService {
                 throw new IllegalArgumentException("Invalid action type: " + action.getActionType());
             }
         }
+    }
+
+    public void endGame(GameSession gameSession) {
+        // Get all players in the game
+        List<Player> players = playerRepository.findByGameSession(gameSession);
+        
+        // Increment rounds played for each player
+        for (Player player : players) {
+            User user = player.getUser();
+            appService.incrementRoundsPlayed(user);
+
+            if (gameSession.getCurrentState() == GameState.CHAMELEON_WIN && player.getIsChameleon()) {
+                appService.incrementWins(user);  // Chameleon wins
+            }
+            else if ((gameSession.getCurrentState() == GameState.PLAYERS_WIN ||
+                      gameSession.getCurrentState() == GameState.CHAMELEON_TURN) && !player.getIsChameleon()) {
+                appService.incrementWins(user);  // Players win
+            }
+    
+        }
+        
     }
 }

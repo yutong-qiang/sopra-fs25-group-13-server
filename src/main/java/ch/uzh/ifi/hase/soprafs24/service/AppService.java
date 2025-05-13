@@ -81,6 +81,8 @@ public class AppService {
   }
 
   public User createUser(User newUser) {
+    newUser.setWins(0);
+    newUser.setRoundsPlayed(0);
     newUser.setToken(UUID.randomUUID().toString());
     checkIfUserExists(newUser);
     // saves the given entity but data is only persisted in the database once
@@ -240,7 +242,7 @@ public class AppService {
   //   }
   // }
 
-  public void endGameSession(String gameToken, User admin) {
+  public void endGameSession(String gameToken, User admin, User winner) {
     GameSession gameSession = getGameSessionByGameToken(gameToken);
     if (!gameSession.getCreator().equals(admin)) {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can end the game");
@@ -250,6 +252,20 @@ public class AppService {
     twilioService.closeVideoRoom(gameSession.getTwilioRoomSid());
 
     List<Player> players = playerRepository.findByGameSession(gameSession);
+
+    // Increment rounds played for all users
+    for (Player player : players) {
+        incrementRoundsPlayed(player.getUser());
+        System.out.println("Incrementing rounds for user: " + player.getUser().getUsername());
+    }
+
+    // Increment wins for the winner
+    if (winner != null) {
+        winner.setWins(winner.getWins() + 1);
+        userRepository.save(winner);
+        System.out.println("Incrementing wins for winner: " + winner.getUsername());
+    }
+
     playerRepository.deleteAll(players);
     
     // Delete game session
@@ -275,6 +291,16 @@ public class AppService {
 
   public void storeAvatar(User user, byte[] avatar) {
     user.setAvatar(avatar);
+    userRepository.save(user);
+  }
+
+  public void incrementRoundsPlayed(User user) {
+    user.setRoundsPlayed(user.getRoundsPlayed() + 1);
+    userRepository.save(user);
+  }
+
+  public void incrementWins(User user) {
+    user.setWins(user.getWins() + 1);
     userRepository.save(user);
   }
 

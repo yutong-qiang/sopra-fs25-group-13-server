@@ -1,18 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,7 +37,6 @@ public class AppServiceTest {
     private TwilioService twilioService;
 
     private AppService appService;
-
     private User testUser;
 
     @BeforeEach
@@ -53,6 +49,8 @@ public class AppServiceTest {
         testUser.setId(1L);
         // testUser.setName("testName");
         testUser.setUsername("testUsername");
+        testUser.setRoundsPlayed(5);
+        testUser.setWins(2);
 
         // when -> any object is being save in the userRepository -> return the dummy
         // testUser
@@ -140,19 +138,28 @@ public class AppServiceTest {
         User creator = new User();
         creator.setId(1L);
         creator.setUsername("testUser");
+        creator.setRoundsPlayed(2);
+        creator.setWins(1);
+
 
         GameSession gameSession = new GameSession();
         gameSession.setCreator(creator);
         gameSession.setGameToken("testToken");
         gameSession.setTwilioRoomSid("RM123456789");
 
+        Player player = new Player();
+        player.setUser(creator);
+
+
         when(gameSessionRepository.findByGameToken("testToken"))
-                .thenReturn(java.util.Optional.of(gameSession));
-        when(playerRepository.findByGameSession(any(GameSession.class)))
-                .thenReturn(new ArrayList<>());
+            .thenReturn(java.util.Optional.of(gameSession));
+        when(playerRepository.findByGameSession(gameSession))
+            .thenReturn(List.of(player));
+        when(userRepository.save(creator)).thenReturn(creator);
+
 
         // when
-        appService.endGameSession("testToken", creator);
+        appService.endGameSession("testToken", creator, creator);
 
         // then
         verify(twilioService).closeVideoRoom("RM123456789");
@@ -177,5 +184,80 @@ public class AppServiceTest {
         verify(userRepository).save(user);
         assertEquals(avatar, user.getAvatar());
     }
+
+    @Test
+    public void incrementRoundsPlayed_incrementsSuccessfully() {
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        appService.incrementRoundsPlayed(testUser);
+
+        assertEquals(6, testUser.getRoundsPlayed());
+        verify(userRepository, times(1)).save(testUser);
+    }
+
+    @Test
+    public void incrementWins_incrementsSuccessfully() {
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        appService.incrementWins(testUser);
+
+        assertEquals(3, testUser.getWins());
+        verify(userRepository, times(1)).save(testUser);
+    }
+
+    @Test
+    public void isUserTokenValid_validToken_returnsTrue() {
+        when(userRepository.existsByToken("validToken")).thenReturn(true);
+
+        boolean result = appService.isUserTokenValid("validToken");
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void isUserTokenValid_invalidToken_returnsFalse() {
+        when(userRepository.existsByToken("invalidToken")).thenReturn(false);
+
+        boolean result = appService.isUserTokenValid("invalidToken");
+
+        assertFalse(result);
+    }
+
+    @Test
+    public void isGameTokenValid_validGameToken_returnsTrue() {
+        when(gameSessionRepository.existsByGameToken("game123")).thenReturn(true);
+
+        boolean result = appService.isGameTokenValid("game123");
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void isGameTokenValid_invalidGameToken_returnsFalse() {
+        when(gameSessionRepository.existsByGameToken("invalidToken")).thenReturn(false);
+
+        boolean result = appService.isGameTokenValid("invalidToken");
+
+        assertFalse(result);
+    }
+
+    @Test
+    public void getUserByToken_successful() {
+        when(userRepository.findByToken("abc")).thenReturn(Optional.of(testUser));
+
+        User result = appService.getUserByToken("abc");
+
+        assertEquals(testUser, result);
+    }
+
+    @Test
+    public void getUserByUsername_successful() {
+        when(userRepository.findByUsername("testUser")).thenReturn(testUser);
+
+        User result = appService.getUserByUsername("testUser");
+
+        assertEquals(testUser, result);
+    }
+
 
 }

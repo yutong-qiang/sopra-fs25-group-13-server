@@ -21,8 +21,14 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 
 public class GameSessionServiceTest {
 
@@ -31,6 +37,12 @@ public class GameSessionServiceTest {
 
     @Mock
     private PlayerRepository playerRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private AppService appService;
 
     @Mock
     private WordService wordService;
@@ -48,7 +60,7 @@ public class GameSessionServiceTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        gameSessionService = new GameSessionService(gameSessionRepository, playerRepository, wordService, messagingTemplate);
+        gameSessionService = new GameSessionService(gameSessionRepository, playerRepository, wordService, appService, messagingTemplate);
         // given
         testUser = new User();
         testUser.setId(1L);
@@ -342,21 +354,43 @@ public class GameSessionServiceTest {
         assertEquals(result.getActionResult(), "CHAMELEON_FOUND");
     }
 
+    @Test
     public void giveHint_success() throws Exception {
+
+        testUser.setUsername("player1");
+        testPlayer.setId(1L);  // Set the player ID
+        testPlayer.setUser(testUser);
+        testPlayer.setGameSession(testGameSession);
+
+
         // given
         testPlayerAction.setActionType("GIVE_HINT");
+        testPlayerAction.setActionContent("test_hint");
         testGameSession.setCurrentState(GameState.STARTED);
         testGameSession.setCurrentPlayerTurn(testPlayer);
+        testGameSession.setSecretWord("different_word"); // Set a different word to avoid hint validation failure
+
+        // Set up next player relationship
+        Player nextPlayer = new Player();
+        nextPlayer.setId(2L);
+        User nextUser = new User();
+        nextUser.setUsername("player2");
+        nextPlayer.setUser(nextUser); 
+        nextPlayer.setGameSession(testGameSession);
+        testPlayer.setNextPlayer(nextPlayer);
+
+        // Mock repository behavior
+        when(playerRepository.save(any(Player.class))).thenReturn(testPlayer);
+        when(gameSessionRepository.save(any(GameSession.class))).thenReturn(testGameSession);
 
         // when
         PlayerActionResult result = gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
+        
         // then
-        Mockito.verify(gameSessionRepository, Mockito.times(1)).save(testGameSession);
-        Mockito.verify(playerRepository, Mockito.times(1)).save(testPlayer);
-        // test player has no nextPlayer set, so it will be considered as the last player
-        // therefore the game will transition to the state READY_FOR_VOTING
-        assertEquals(testGameSession.getCurrentState(), GameState.READY_FOR_VOTING);
-        assertEquals(result.getActionType(), testPlayerAction.getActionType());
+        verify(gameSessionRepository, times(1)).save(testGameSession);
+        verify(playerRepository, times(1)).save(testPlayer);
+        assertEquals(GameState.STARTED, testGameSession.getCurrentState()); 
+        assertEquals(testPlayerAction.getActionType(), result.getActionType());
     }
 
     @Test
@@ -410,4 +444,106 @@ public class GameSessionServiceTest {
         // then
         assertEquals("Game session is not in a valid state for a chameleon guess", exception.getMessage());
     }
+
+    @Test
+    public void endGame_chameleonWins_incrementsRoundsAndWinsCorrectly() {
+        GameSession game = new GameSession();
+        game.setCurrentState(GameState.CHAMELEON_WIN);
+
+        User chameleonUser = new User();
+        Player chameleonPlayer = new Player();
+        chameleonPlayer.setUser(chameleonUser);
+        chameleonPlayer.setIsChameleon(true);
+
+        User playerUser = new User();
+        Player normalPlayer = new Player();
+        normalPlayer.setUser(playerUser);
+        normalPlayer.setIsChameleon(false);
+
+        List<Player> players = List.of(chameleonPlayer, normalPlayer);
+        when(playerRepository.findByGameSession(game)).thenReturn(players);
+
+        gameSessionService.endGame(game);
+
+        verify(appService).incrementRoundsPlayed(chameleonUser);
+        verify(appService).incrementRoundsPlayed(playerUser);
+        verify(appService).incrementWins(chameleonUser);
+        verify(appService, never()).incrementWins(playerUser);
+    }
+
+    @Test
+    public void endGame_playersWin_incrementsRoundsAndWinsCorrectly() {
+        GameSession game = new GameSession();
+        game.setCurrentState(GameState.PLAYERS_WIN);
+
+        User chameleonUser = new User();
+        Player chameleonPlayer = new Player();
+        chameleonPlayer.setUser(chameleonUser);
+        chameleonPlayer.setIsChameleon(true);
+
+        User playerUser = new User();
+        Player normalPlayer = new Player();
+        normalPlayer.setUser(playerUser);
+        normalPlayer.setIsChameleon(false);
+
+        List<Player> players = List.of(chameleonPlayer, normalPlayer);
+        when(playerRepository.findByGameSession(game)).thenReturn(players);
+
+        gameSessionService.endGame(game);
+
+        verify(appService).incrementRoundsPlayed(chameleonUser);
+        verify(appService).incrementRoundsPlayed(playerUser);
+        verify(appService).incrementWins(playerUser);
+        verify(appService, never()).incrementWins(chameleonUser);
+    }
+    @Test
+    public void endGame_chameleonTurn_playersStillWin() {
+        GameSession game = new GameSession();
+        game.setCurrentState(GameState.CHAMELEON_TURN);
+
+        User chameleonUser = new User();
+        Player chameleonPlayer = new Player();
+        chameleonPlayer.setUser(chameleonUser);
+        chameleonPlayer.setIsChameleon(true);
+
+        User playerUser = new User();
+        Player normalPlayer = new Player();
+        normalPlayer.setUser(playerUser);
+        normalPlayer.setIsChameleon(false);
+
+        List<Player> players = List.of(chameleonPlayer, normalPlayer);
+        when(playerRepository.findByGameSession(game)).thenReturn(players);
+
+        gameSessionService.endGame(game);
+
+        verify(appService).incrementRoundsPlayed(chameleonUser);
+        verify(appService).incrementRoundsPlayed(playerUser);
+        verify(appService).incrementWins(playerUser);
+        verify(appService, never()).incrementWins(chameleonUser);
+    }
+    @Test
+    public void endGame_noWinState_onlyRoundsIncremented() {
+        GameSession game = new GameSession();
+        game.setCurrentState(GameState.STARTED); // unexpected state
+
+        User user1 = new User();
+        Player player1 = new Player();
+        player1.setUser(user1);
+        player1.setIsChameleon(true);
+
+        User user2 = new User();
+        Player player2 = new Player();
+        player2.setUser(user2);
+        player2.setIsChameleon(false);
+
+        List<Player> players = List.of(player1, player2);
+        when(playerRepository.findByGameSession(game)).thenReturn(players);
+
+        gameSessionService.endGame(game);
+
+        verify(appService).incrementRoundsPlayed(user1);
+        verify(appService).incrementRoundsPlayed(user2);
+        verify(appService, never()).incrementWins(any());
+    }
+
 }

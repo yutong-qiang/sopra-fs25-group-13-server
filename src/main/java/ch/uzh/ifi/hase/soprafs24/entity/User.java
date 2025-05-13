@@ -47,6 +47,9 @@ public class User implements Serializable {
     @Column(nullable = true)
     private int wins;
 
+    @Column(nullable = true)
+    private int roundsPlayed;
+
     public Long getId() {
         return id;
     }
@@ -91,6 +94,14 @@ public class User implements Serializable {
 
     public void setWins(int wins) {
         this.wins = wins;
+    }
+
+    public int getRoundsPlayed() {
+        return roundsPlayed;
+    }
+
+    public void setRoundsPlayed(int roundsPlayed) {
+        this.roundsPlayed = roundsPlayed;
     }
 
     // public UserStatus getStatus() {
