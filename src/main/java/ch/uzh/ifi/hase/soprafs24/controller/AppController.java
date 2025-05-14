@@ -26,6 +26,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.LeaderboardEntryDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.GameDTOMapper;
@@ -355,5 +356,34 @@ public class AppController {
                     e
             );
         }
+    }
+
+    @GetMapping("/leaderboard")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public List<LeaderboardEntryDTO> getLeaderboard() {
+        List<User> users = appService.getUsers();
+        List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
+        
+        for (User user : users) {
+            LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+            entry.setId(user.getId());
+            entry.setUsername(user.getUsername());
+            entry.setWins(user.getWins());
+            entry.setRoundsPlayed(user.getRoundsPlayed());
+            entry.setAvatar(user.getAvatar());
+            
+            double winRate = user.getRoundsPlayed() > 0 
+                ? (double) user.getWins() / user.getRoundsPlayed() 
+                : 0.0;
+            entry.setWinRate(winRate);
+            
+            leaderboard.add(entry);
+        }
+        
+        // Sort by win rate (descending)
+        leaderboard.sort((a, b) -> Double.compare(b.getWinRate(), a.getWinRate()));
+        
+        return leaderboard;
     }
 }

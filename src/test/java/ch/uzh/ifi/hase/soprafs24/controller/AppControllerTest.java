@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -818,8 +819,8 @@ public class AppControllerTest {
     }
 
     /// POST /user/avatar
-                /// fail to upload avatar due to wrong file type (png)
-                /// 415 Unsupported Media Type
+    /// fail to upload avatar due to wrong file type (png)
+    /// 415 Unsupported Media Type
     @Test
     public void uploadAvatar_invalidFileType() throws Exception {
         // given
@@ -837,6 +838,100 @@ public class AppControllerTest {
                 .header("Authorization", "validToken");
         mockMvc.perform(postRequest)
                 .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
+    public void getLeaderboard_success() throws Exception {
+        // given
+        List<User> users = new ArrayList<>();
+        
+        // Create test users with different win rates
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("player1");
+        user1.setWins(10);
+        user1.setRoundsPlayed(20);
+        users.add(user1);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("player2");
+        user2.setWins(5);
+        user2.setRoundsPlayed(10);
+        users.add(user2);
+
+        User user3 = new User();
+        user3.setId(3L);
+        user3.setUsername("player3");
+        user3.setWins(0);
+        user3.setRoundsPlayed(5);
+        users.add(user3);
+
+        // when
+        given(appService.getUsers()).willReturn(users);
+
+        // then
+        mockMvc.perform(get("/leaderboard")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                // Check first place (player1)
+                .andExpect(jsonPath("$[0].id", is(user1.getId().intValue())))
+                .andExpect(jsonPath("$[0].username", is(user1.getUsername())))
+                .andExpect(jsonPath("$[0].wins", is(user1.getWins())))
+                .andExpect(jsonPath("$[0].roundsPlayed", is(user1.getRoundsPlayed())))
+                .andExpect(jsonPath("$[0].winRate", is(0.5)))
+                // Check second place (player2)
+                .andExpect(jsonPath("$[1].id", is(user2.getId().intValue())))
+                .andExpect(jsonPath("$[1].username", is(user2.getUsername())))
+                .andExpect(jsonPath("$[1].wins", is(user2.getWins())))
+                .andExpect(jsonPath("$[1].roundsPlayed", is(user2.getRoundsPlayed())))
+                .andExpect(jsonPath("$[1].winRate", is(0.5)))
+                // Check third place (player3)
+                .andExpect(jsonPath("$[2].id", is(user3.getId().intValue())))
+                .andExpect(jsonPath("$[2].username", is(user3.getUsername())))
+                .andExpect(jsonPath("$[2].wins", is(user3.getWins())))
+                .andExpect(jsonPath("$[2].roundsPlayed", is(user3.getRoundsPlayed())))
+                .andExpect(jsonPath("$[2].winRate", is(0.0)));
+    }
+
+    @Test
+    public void getLeaderboard_emptyList() throws Exception {
+        // given
+        List<User> emptyList = new ArrayList<>();
+        given(appService.getUsers()).willReturn(emptyList);
+
+        // when/then
+        mockMvc.perform(get("/leaderboard")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    public void getLeaderboard_zeroRoundsPlayed() throws Exception {
+        // given
+        List<User> users = new ArrayList<>();
+        
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("player1");
+        user.setWins(0);
+        user.setRoundsPlayed(0);
+        users.add(user);
+
+        given(appService.getUsers()).willReturn(users);
+
+        // when/then
+        mockMvc.perform(get("/leaderboard")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(user.getId().intValue())))
+                .andExpect(jsonPath("$[0].username", is(user.getUsername())))
+                .andExpect(jsonPath("$[0].wins", is(user.getWins())))
+                .andExpect(jsonPath("$[0].roundsPlayed", is(user.getRoundsPlayed())))
+                .andExpect(jsonPath("$[0].winRate", is(0.0)));
     }
 
     /**
