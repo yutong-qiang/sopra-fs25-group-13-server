@@ -264,6 +264,7 @@ public class GameSessionService {
         PlayerActionResult result = new PlayerActionResult();
         result.setActionType(action.getActionType());
         result.setActionContent(action.getActionContent());
+        result.setUsername(player.getUser().getUsername());
         return result;
     }
 

@@ -5,6 +5,7 @@ public class PlayerActionResult {
     private String actionType;
     private String actionContent;
     private String actionResult;
+    private String username;
 
     public String getActionType() {
         return actionType;
@@ -30,4 +31,11 @@ public class PlayerActionResult {
         this.actionResult = actionResult;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 }
