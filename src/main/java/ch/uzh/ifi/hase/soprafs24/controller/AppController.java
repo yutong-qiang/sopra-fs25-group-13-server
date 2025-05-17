@@ -145,21 +145,15 @@ public class AppController {
     @ResponseBody
     public void endGameSession(
             @PathVariable String gameToken,
-            @RequestHeader("Authorization") String authToken,
-            @RequestParam Long winnerId
-    ) {
+            @RequestHeader("Authorization") String authToken) {
         // verify authToken
         if (!appService.isUserTokenValid(authToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
         }
         // get user      
         User user = appService.getUserByToken(authToken);
-        // get winner
-        User winner = appService.getUserById(winnerId);
         // end game session
-        appService.endGameSession(gameToken, user, winner);
-        System.out.println("Incrementing rounds for user: " + user.getUsername());
-        System.out.println("Incrementing wins for winner: " + winner.getUsername());
+        appService.endGameSession(gameToken, user);
     }
 
     /////////////// join game session ////////////////////////
@@ -364,7 +358,7 @@ public class AppController {
     public List<LeaderboardEntryDTO> getLeaderboard() {
         List<User> users = appService.getUsers();
         List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
-        
+
         for (User user : users) {
             LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
             entry.setId(user.getId());
@@ -372,18 +366,18 @@ public class AppController {
             entry.setWins(user.getWins());
             entry.setRoundsPlayed(user.getRoundsPlayed());
             entry.setAvatar(user.getAvatar());
-            
-            double winRate = user.getRoundsPlayed() > 0 
-                ? (double) user.getWins() / user.getRoundsPlayed() 
-                : 0.0;
+
+            double winRate = user.getRoundsPlayed() > 0
+                    ? (double) user.getWins() / user.getRoundsPlayed()
+                    : 0.0;
             entry.setWinRate(winRate);
-            
+
             leaderboard.add(entry);
         }
-        
+
         // Sort by win rate (descending)
         leaderboard.sort((a, b) -> Double.compare(b.getWinRate(), a.getWinRate()));
-        
+
         return leaderboard;
     }
 }

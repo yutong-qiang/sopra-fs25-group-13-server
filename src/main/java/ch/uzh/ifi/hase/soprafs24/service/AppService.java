@@ -242,7 +242,7 @@ public class AppService {
   //   }
   // }
 
-  public void endGameSession(String gameToken, User admin, User winner) {
+  public void endGameSession(String gameToken, User admin) {
     GameSession gameSession = getGameSessionByGameToken(gameToken);
     if (!gameSession.getCreator().equals(admin)) {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the game creator can end the game");
@@ -251,22 +251,9 @@ public class AppService {
     // Close video room
     twilioService.closeVideoRoom(gameSession.getTwilioRoomSid());
 
-    List<Player> players = playerRepository.findByGameSession(gameSession);
-
-    // Increment rounds played for all users
-    for (Player player : players) {
-        incrementRoundsPlayed(player.getUser());
-        System.out.println("Incrementing rounds for user: " + player.getUser().getUsername());
-    }
-
-    // Increment wins for the winner
-    if (winner != null) {
-        winner.setWins(winner.getWins() + 1);
-        userRepository.save(winner);
-        System.out.println("Incrementing wins for winner: " + winner.getUsername());
-    }
-
-    playerRepository.deleteAll(players);
+    // Delete all players
+    playerRepository.deleteAll(playerRepository.findByGameSession(gameSession));
+    playerRepository.flush();
     
     // Delete game session
     gameSessionRepository.delete(gameSession);

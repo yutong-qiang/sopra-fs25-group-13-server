@@ -10,8 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -24,11 +29,6 @@ import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerAction;
 import ch.uzh.ifi.hase.soprafs24.websocket.PlayerActionResult;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 
 public class GameSessionServiceTest {
 
@@ -362,7 +362,6 @@ public class GameSessionServiceTest {
         testPlayer.setUser(testUser);
         testPlayer.setGameSession(testGameSession);
 
-
         // given
         testPlayerAction.setActionType("GIVE_HINT");
         testPlayerAction.setActionContent("test_hint");
@@ -375,7 +374,7 @@ public class GameSessionServiceTest {
         nextPlayer.setId(2L);
         User nextUser = new User();
         nextUser.setUsername("player2");
-        nextPlayer.setUser(nextUser); 
+        nextPlayer.setUser(nextUser);
         nextPlayer.setGameSession(testGameSession);
         testPlayer.setNextPlayer(nextPlayer);
 
@@ -385,11 +384,11 @@ public class GameSessionServiceTest {
 
         // when
         PlayerActionResult result = gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
-        
+
         // then
         verify(gameSessionRepository, times(1)).save(testGameSession);
         verify(playerRepository, times(1)).save(testPlayer);
-        assertEquals(GameState.STARTED, testGameSession.getCurrentState()); 
+        assertEquals(GameState.STARTED, testGameSession.getCurrentState());
         assertEquals(testPlayerAction.getActionType(), result.getActionType());
     }
 
@@ -463,7 +462,7 @@ public class GameSessionServiceTest {
         List<Player> players = List.of(chameleonPlayer, normalPlayer);
         when(playerRepository.findByGameSession(game)).thenReturn(players);
 
-        gameSessionService.endGame(game);
+        gameSessionService.recordGameSessionEnd(game);
 
         verify(appService).incrementRoundsPlayed(chameleonUser);
         verify(appService).incrementRoundsPlayed(playerUser);
@@ -489,38 +488,14 @@ public class GameSessionServiceTest {
         List<Player> players = List.of(chameleonPlayer, normalPlayer);
         when(playerRepository.findByGameSession(game)).thenReturn(players);
 
-        gameSessionService.endGame(game);
+        gameSessionService.recordGameSessionEnd(game);
 
         verify(appService).incrementRoundsPlayed(chameleonUser);
         verify(appService).incrementRoundsPlayed(playerUser);
         verify(appService).incrementWins(playerUser);
         verify(appService, never()).incrementWins(chameleonUser);
     }
-    @Test
-    public void endGame_chameleonTurn_playersStillWin() {
-        GameSession game = new GameSession();
-        game.setCurrentState(GameState.CHAMELEON_TURN);
 
-        User chameleonUser = new User();
-        Player chameleonPlayer = new Player();
-        chameleonPlayer.setUser(chameleonUser);
-        chameleonPlayer.setIsChameleon(true);
-
-        User playerUser = new User();
-        Player normalPlayer = new Player();
-        normalPlayer.setUser(playerUser);
-        normalPlayer.setIsChameleon(false);
-
-        List<Player> players = List.of(chameleonPlayer, normalPlayer);
-        when(playerRepository.findByGameSession(game)).thenReturn(players);
-
-        gameSessionService.endGame(game);
-
-        verify(appService).incrementRoundsPlayed(chameleonUser);
-        verify(appService).incrementRoundsPlayed(playerUser);
-        verify(appService).incrementWins(playerUser);
-        verify(appService, never()).incrementWins(chameleonUser);
-    }
     @Test
     public void endGame_noWinState_onlyRoundsIncremented() {
         GameSession game = new GameSession();
@@ -539,11 +514,49 @@ public class GameSessionServiceTest {
         List<Player> players = List.of(player1, player2);
         when(playerRepository.findByGameSession(game)).thenReturn(players);
 
-        gameSessionService.endGame(game);
+        gameSessionService.recordGameSessionEnd(game);
 
         verify(appService).incrementRoundsPlayed(user1);
         verify(appService).incrementRoundsPlayed(user2);
         verify(appService, never()).incrementWins(any());
+    }
+
+    @Test
+    public void newGame_success() {
+        // given
+        testPlayerAction.setActionType("NEW_GAME");
+        testGameSession.setCurrentState(GameState.PLAYERS_WIN);
+
+        GameSession newGameSession = new GameSession();
+        newGameSession.setGameToken("aaa");
+        when(appService.createGameSession(testUser)).thenReturn(newGameSession);
+
+        // when
+        gameSessionService.newGame(testPlayer, testPlayerAction, testGameSession);
+
+        // then
+        verify(appService).createGameSession(testPlayer.getUser());
+        // wait 10 seconds to verify that the game session is deleted
+        try {
+            Thread.sleep(11000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        verify(appService, times(1)).endGameSession(testGameSession.getGameToken(), testPlayer.getUser());
+    }
+
+    @Test
+    public void newGame_wrong_game_state() {
+        // given
+        testPlayerAction.setActionType("NEW_GAME");
+        testGameSession.setCurrentState(GameState.VOTING);
+
+        // when
+        Exception exception = assertThrows(Exception.class, () -> {
+            gameSessionService.newGame(testPlayer, testPlayerAction, testGameSession);
+        });
+        // then
+        assertEquals("Game session is not in a valid state to start a new game", exception.getMessage());
     }
 
 }

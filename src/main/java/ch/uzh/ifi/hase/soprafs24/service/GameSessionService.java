@@ -64,7 +64,7 @@ public class GameSessionService {
     }
 
     private static final Set<String> ADMIN_ACTIONS = Set.of(
-            "TEST_ADMIN_ACTION", "START_GAME", "START_VOTING", "END_VOTING"
+            "TEST_ADMIN_ACTION", "START_GAME", "START_VOTING", "END_VOTING", "NEW_GAME"
     );
 
     public boolean isAdminAction(PlayerAction action) {
@@ -171,6 +171,7 @@ public class GameSessionService {
         } else {
             result.setActionResult("CHAMELEON_WON");
             gameSession.setCurrentState(GameState.CHAMELEON_WIN);
+            recordGameSessionEnd(gameSession);
         }
         gameSessionRepository.save(gameSession);
         return result;
@@ -294,7 +295,23 @@ public class GameSessionService {
         gameSession.setCurrentState(chameleon_win ? GameState.CHAMELEON_WIN : GameState.PLAYERS_WIN);
         gameSessionRepository.save(gameSession);
 
-        endGame(gameSession);
+        recordGameSessionEnd(gameSession);
+        return result;
+    }
+
+    public PlayerActionResult newGame(Player admin, PlayerAction action, GameSession gameSession) {
+        if (gameSession.getCurrentState() != GameState.CHAMELEON_WIN && gameSession.getCurrentState() != GameState.PLAYERS_WIN) {
+            throw new IllegalStateException("Game session is not in a valid state to start a new game");
+        }
+        GameSession newGameSession = appService.createGameSession(gameSession.getCreator());
+        // delete this game session in 10 seconds
+        scheduler.schedule(() -> {
+            appService.endGameSession(gameSession.getGameToken(), admin.getUser());
+        }, 10, TimeUnit.SECONDS);
+        // send the new game session token to the players
+        PlayerActionResult result = new PlayerActionResult();
+        result.setActionType(action.getActionType());
+        result.setActionContent(newGameSession.getGameToken());
         return result;
     }
 
@@ -330,6 +347,10 @@ public class GameSessionService {
                 log.info("Processing START_GAME action");
                 return startGame(action, gameSession);
             }
+            case "NEW_GAME" -> {
+                log.info("Processing NEW_GAME action");
+                return newGame(player, action, gameSession);
+            }
             case "GIVE_HINT" -> {
                 return giveHint(player, action, gameSession);
             }
@@ -348,10 +369,10 @@ public class GameSessionService {
         }
     }
 
-    public void endGame(GameSession gameSession) {
+    public void recordGameSessionEnd(GameSession gameSession) {
         // Get all players in the game
         List<Player> players = playerRepository.findByGameSession(gameSession);
-        
+
         // Increment rounds played for each player
         for (Player player : players) {
             User user = player.getUser();
@@ -359,13 +380,11 @@ public class GameSessionService {
 
             if (gameSession.getCurrentState() == GameState.CHAMELEON_WIN && player.getIsChameleon()) {
                 appService.incrementWins(user);  // Chameleon wins
-            }
-            else if ((gameSession.getCurrentState() == GameState.PLAYERS_WIN ||
-                      gameSession.getCurrentState() == GameState.CHAMELEON_TURN) && !player.getIsChameleon()) {
+            } else if (gameSession.getCurrentState() == GameState.PLAYERS_WIN && !player.getIsChameleon()) {
                 appService.incrementWins(user);  // Players win
             }
-    
+
         }
-        
+
     }
 }

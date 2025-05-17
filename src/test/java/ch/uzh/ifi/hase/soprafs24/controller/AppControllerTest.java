@@ -1,8 +1,8 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -568,7 +568,7 @@ public class AppControllerTest {
         mockMvc.perform(deleteRequest)
                 .andExpect(status().isNoContent());
 
-        verify(appService).endGameSession(gameToken, creator, winner);
+        verify(appService).endGameSession(gameToken, creator);
     }
 
     /// DELETE /game/{gameToken}
@@ -589,7 +589,7 @@ public class AppControllerTest {
         mockMvc.perform(deleteRequest)
                 .andExpect(status().isUnauthorized());
 
-        verify(appService, Mockito.never()).endGameSession(Mockito.any(), Mockito.any(), Mockito.any());
+        verify(appService, Mockito.never()).endGameSession(Mockito.any(), Mockito.any());
     }
 
     /// DELETE /game/{gameToken}
@@ -613,7 +613,7 @@ public class AppControllerTest {
         given(appService.getUserByToken(authToken)).willReturn(notCreator);
         given(appService.getUserById(winnerId)).willReturn(winner);
         Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized to end game"))
-                .when(appService).endGameSession(gameToken, notCreator, winner);
+                .when(appService).endGameSession(gameToken, notCreator);
 
         MockHttpServletRequestBuilder deleteRequest = delete("/game/end/" + gameToken)
                 .header("Authorization", authToken)
@@ -794,7 +794,6 @@ public class AppControllerTest {
                 .andExpect(jsonPath("$[1].roundsPlayed", is(user2.getRoundsPlayed())));
     }
 
-
     @Test
     public void uploadAvatar_success() throws Exception {
         // given
@@ -844,7 +843,7 @@ public class AppControllerTest {
     public void getLeaderboard_success() throws Exception {
         // given
         List<User> users = new ArrayList<>();
-        
+
         // Create test users with different win rates
         User user1 = new User();
         user1.setId(1L);
@@ -912,7 +911,7 @@ public class AppControllerTest {
     public void getLeaderboard_zeroRoundsPlayed() throws Exception {
         // given
         List<User> users = new ArrayList<>();
-        
+
         User user = new User();
         user.setId(1L);
         user.setUsername("player1");

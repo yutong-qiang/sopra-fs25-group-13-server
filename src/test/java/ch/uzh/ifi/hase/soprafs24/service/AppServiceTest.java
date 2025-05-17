@@ -159,7 +159,7 @@ public class AppServiceTest {
 
 
         // when
-        appService.endGameSession("testToken", creator, creator);
+        appService.endGameSession("testToken", creator);
 
         // then
         verify(twilioService).closeVideoRoom("RM123456789");
