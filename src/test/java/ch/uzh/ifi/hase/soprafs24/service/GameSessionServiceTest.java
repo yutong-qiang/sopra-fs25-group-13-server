@@ -367,7 +367,7 @@ public class GameSessionServiceTest {
         testPlayerAction.setActionContent("test_hint");
         testGameSession.setCurrentState(GameState.STARTED);
         testGameSession.setCurrentPlayerTurn(testPlayer);
-        testGameSession.setSecretWord("different_word"); // Set a different word to avoid hint validation failure
+        testGameSession.setSecretWord("secret_word");
 
         // Set up next player relationship
         Player nextPlayer = new Player();
@@ -389,6 +389,87 @@ public class GameSessionServiceTest {
         verify(gameSessionRepository, times(1)).save(testGameSession);
         verify(playerRepository, times(1)).save(testPlayer);
         assertEquals(GameState.STARTED, testGameSession.getCurrentState());
+        assertEquals(testPlayerAction.getActionType(), result.getActionType());
+    }
+
+    @Test
+    public void giveHint_last_hint_success() throws Exception {
+
+        testUser.setUsername("player1");
+        testPlayer.setId(1L);  // Set the player ID
+        testPlayer.setUser(testUser);
+        testPlayer.setGameSession(testGameSession);
+
+        // given
+        testPlayerAction.setActionType("GIVE_HINT");
+        testPlayerAction.setActionContent("test_hint");
+        testGameSession.setCurrentState(GameState.STARTED);
+        testGameSession.setCurrentPlayerTurn(testPlayer);
+        testGameSession.setSecretWord("secret_word");
+
+        // Mock repository behavior
+        when(playerRepository.save(any(Player.class))).thenReturn(testPlayer);
+        when(gameSessionRepository.save(any(GameSession.class))).thenReturn(testGameSession);
+
+        // when
+        PlayerActionResult result = gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
+
+        // then
+        verify(gameSessionRepository, times(1)).save(testGameSession);
+        verify(playerRepository, times(1)).save(testPlayer);
+        assertEquals(GameState.READY_FOR_VOTING, testGameSession.getCurrentState());
+        assertEquals(testPlayerAction.getActionType(), result.getActionType());
+    }
+
+    @Test
+    public void giveHint_secret_word_fail() throws Exception {
+
+        testUser.setUsername("player1");
+        testPlayer.setId(1L);  // Set the player ID
+        testPlayer.setUser(testUser);
+        testPlayer.setGameSession(testGameSession);
+
+        // given
+        testPlayerAction.setActionType("GIVE_HINT");
+        testPlayerAction.setActionContent("secret_word");
+        testGameSession.setCurrentState(GameState.STARTED);
+        testGameSession.setCurrentPlayerTurn(testPlayer);
+        testGameSession.setSecretWord("secret_word");
+
+        // when
+        Exception exception = assertThrows(Exception.class, () -> {
+            gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
+        });
+        // check exception message
+        assertEquals("Hint cannot contain the secret word", exception.getMessage());
+    }
+
+    @Test
+    public void giveHint_secret_word_success() throws Exception {
+        testUser.setUsername("player1");
+        testPlayer.setId(1L);  // Set the player ID
+        testPlayer.setUser(testUser);
+        testPlayer.setIsChameleon(true); // chameleon is allowed to give the secret word as a hint
+        testPlayer.setGameSession(testGameSession);
+
+        // given
+        testPlayerAction.setActionType("GIVE_HINT");
+        testPlayerAction.setActionContent("secret_word");
+        testGameSession.setCurrentState(GameState.STARTED);
+        testGameSession.setCurrentPlayerTurn(testPlayer);
+        testGameSession.setSecretWord("secret_word");
+
+        // Mock repository behavior
+        when(playerRepository.save(any(Player.class))).thenReturn(testPlayer);
+        when(gameSessionRepository.save(any(GameSession.class))).thenReturn(testGameSession);
+
+        // when
+        PlayerActionResult result = gameSessionService.giveHint(testPlayer, testPlayerAction, testGameSession);
+
+        // then
+        verify(gameSessionRepository, times(1)).save(testGameSession);
+        verify(playerRepository, times(1)).save(testPlayer);
+        assertEquals(GameState.READY_FOR_VOTING, testGameSession.getCurrentState());
         assertEquals(testPlayerAction.getActionType(), result.getActionType());
     }
 

@@ -235,7 +235,7 @@ public class GameSessionService {
             throw new IllegalStateException("Hint cannot be empty");
         }
 
-        // check if hint contains only one word
+        // check that hint contains only one word
         if (hint.split("\\s+").length > 1) {
             throw new IllegalStateException("Hint must be a single word");
         }
@@ -243,9 +243,9 @@ public class GameSessionService {
         hint = hint.toLowerCase();
         String secretWord = gameSession.getSecretWord().toLowerCase();
 
-        // check if the hint is a substring of the secret word
-        if (hint.contains(secretWord)) {
-            throw new IllegalStateException("Hint cannot contain parts of the secret word");
+        if (hint.contains(secretWord) && !player.getIsChameleon()) {
+            // if the player is not the chameleon, they cannot give a hint that contains the secret word
+            throw new IllegalStateException("Hint cannot contain the secret word");
         }
 
         player.setGivenHint(hint);
