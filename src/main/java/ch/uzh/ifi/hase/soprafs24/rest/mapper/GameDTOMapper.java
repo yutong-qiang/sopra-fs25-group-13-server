@@ -6,6 +6,7 @@ import org.mapstruct.factory.Mappers;
 
 import ch.uzh.ifi.hase.soprafs24.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameSessionGetDTO;
 
 /**
@@ -30,5 +31,6 @@ public interface GameDTOMapper {
   @Mapping(target = "gameState", source = "gameSession.currentState")
   @Mapping(target = "currentTurn", source = "gameSession.currentPlayerTurn.user.username")
   @Mapping(target = "role", expression = "java(player.getIsChameleon() ? \"CHAMELEON\" : \"NORMAL\")")
-  GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession, Player player);
+  @Mapping(target = "admin", expression = "java(currentUser.getId().equals(gameSession.getCreator().getId()))")
+  GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession, Player player, User currentUser);
 }

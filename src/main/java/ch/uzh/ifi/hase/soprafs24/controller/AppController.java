@@ -135,7 +135,7 @@ public class AppController {
         // add the user to the game session
         Player player = appService.addToGameSession(user, gameSession);
         // return the game session
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player, user);
         return gameSessionGetDTO;
     }
 
@@ -180,7 +180,7 @@ public class AppController {
         // add the user to the game session
         Player player = appService.addToGameSession(user, gameSession);
         // return the game session
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player, user);
         return gameSessionGetDTO;
     }
 
@@ -301,7 +301,7 @@ public class AppController {
         Player player = appService.getPlayerByUserAndGameSession(user, gameSession);
 
         // Create DTO
-        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player);
+        GameSessionGetDTO gameSessionGetDTO = GameDTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession, player, user);
 
         // Set role
         gameSessionGetDTO.setRole(player.getIsChameleon() ? "CHAMELEON" : "PLAYER");

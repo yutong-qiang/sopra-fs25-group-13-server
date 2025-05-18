@@ -12,6 +12,7 @@ public class GameSessionGetDTO {
     private String secretWord;
     private GameState gameState;
     private String currentTurn;
+    private boolean admin;
 
     public Long getGameSessionId() {
         return gameSessionId;
@@ -75,5 +76,13 @@ public class GameSessionGetDTO {
 
     public void setCurrentTurn(String currentTurn) {
         this.currentTurn = currentTurn;
+    }
+    
+    public boolean isAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        this.admin = isAdmin;
     }
 }
