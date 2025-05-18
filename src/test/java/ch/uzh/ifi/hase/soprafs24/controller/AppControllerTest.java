@@ -638,6 +638,7 @@ public class AppControllerTest {
         gameSession.setGameToken("testToken");
         gameSession.setCurrentState(GameState.STARTED);
         gameSession.setSecretWord("apple");
+        gameSession.setCreator(user);
 
         Player player = new Player();
         player.setIsChameleon(false);
@@ -664,7 +665,8 @@ public class AppControllerTest {
                 .andExpect(jsonPath("$.role", is("PLAYER")))
                 .andExpect(jsonPath("$.secretWord", is("apple")))
                 .andExpect(jsonPath("$.gameState", is("STARTED")))
-                .andExpect(jsonPath("$.currentTurn", is(user.getUsername())));
+                .andExpect(jsonPath("$.currentTurn", is(user.getUsername())))
+                .andExpect(jsonPath("$.admin", is(true)));
     }
 
     /// GET /game/info/{gameToken}
@@ -682,10 +684,16 @@ public class AppControllerTest {
         gameSession.setGameToken("testToken");
         gameSession.setCurrentState(GameState.STARTED);
         gameSession.setSecretWord("apple");
+        gameSession.setCreator(user);
 
         Player player = new Player();
         player.setIsChameleon(true);
         player.setUser(user);
+
+        // Set up current turn player
+        Player currentTurnPlayer = new Player();
+        currentTurnPlayer.setUser(user);
+        gameSession.setCurrentPlayerTurn(currentTurnPlayer);
 
         given(appService.isUserTokenValid(Mockito.anyString())).willReturn(true);
         given(appService.getUserByToken(Mockito.anyString())).willReturn(user);
@@ -700,7 +708,9 @@ public class AppControllerTest {
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role", is("CHAMELEON")))
-                .andExpect(jsonPath("$.secretWord", is("")));
+                .andExpect(jsonPath("$.secretWord", is("")))
+                .andExpect(jsonPath("$.currentTurn", is(user.getUsername())))
+                .andExpect(jsonPath("$.admin", is(true)));
     }
 
     /// GET /game/info/{gameToken}
