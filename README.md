@@ -1,118 +1,93 @@
-# SoPra RESTful Service Template FS25
+# THE CHAMELEON
 
-## Getting started with Spring Boot
--   Documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/index.html
--   Guides: http://spring.io/guides
-    -   Building a RESTful Web Service: http://spring.io/guides/gs/rest-service/
-    -   Building REST services with Spring: https://spring.io/guides/tutorials/rest/
+## Introduction
+The Chameleon is a web-based multiplayer social deduction game inspired by the popular party game of the same name. In each round, all players except one — the Chameleon — are shown a secret word. Players then take turns giving subtle clues related to the word, trying to show they know it without being too obvious. The Chameleon, who doesn't know the word, must improvise a clue and blend in. After all clues are given, everyone votes to find the imposter.
+Our implementation is designed for seamless online play, featuring real-time interactions so players can see each other’s reactions and experience synchronized role assignment, hint and voting phases, and results. Unlike traditional versions, our app does not use a grid of words and instead only one secret word is selected per round to keep the game simple while maintaining a fun and engaging experience. We've also added other features like automatic round tracking and the leaderboard. The game is ideal for remote groups looking for face-to-face social deduction gameplay from anywhere.
 
-## Setup this Template with your IDE of choice
-Download your IDE of choice (e.g., [IntelliJ](https://www.jetbrains.com/idea/download/), [Visual Studio Code](https://code.visualstudio.com/), or [Eclipse](http://www.eclipse.org/downloads/)). Make sure Java 17 is installed on your system (for Windows, please make sure your `JAVA_HOME` environment variable is set to the correct version of Java).
+## Technologies used
+* **Frontend**: Next.js, React
+* **Backend**: Java, Spring Boot, STOMP WebSocket (via SockJS)
+* **Video API**: Twilio Video API
+* **Deployment**: Google App Engine, Vercel
 
-### IntelliJ
-If you consider to use IntelliJ as your IDE of choice, you can make use of your free educational license [here](https://www.jetbrains.com/community/education/#students).
-1. File -> Open... -> SoPra server template
-2. Accept to import the project as a `gradle project`
-3. To build right click the `build.gradle` file and choose `Run Build`
+## High-level components
+### [AppController.java](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/src/main/java/ch/uzh/ifi/hase/soprafs24/controller/AppController.java)
+Acts as the central REST controller for the backend. It handles all HTTP endpoints related to: User management (register, login, logout, avatar upload); Game session management (create, join, end, retrieve info); Leaderboard access
 
-### VS Code
-The following extensions can help you get started more easily:
--   `vmware.vscode-spring-boot`
--   `vscjava.vscode-spring-initializr`
--   `vscjava.vscode-spring-boot-dashboard`
--   `vscjava.vscode-java-pack`
+Interacts with:
+* AppService for user authentication, game logic, and data retrieval
+* TwilioService to generate video room tokens
+* UserDTOMapper, GameDTOMapper for mapping entities to response objects
+* GameSession, User, and Player entities via service layer
 
-**Note:** You'll need to build the project first with Gradle, just click on the `build` command in the _Gradle Tasks_ extension. Then check the _Spring Boot Dashboard_ extension if it already shows `soprafs24` and hit the play button to start the server. If it doesn't show up, restart VS Code and check again.
+### [GameSessionController.java](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/src/main/java/ch/uzh/ifi/hase/soprafs24/controller/GameSessionController.java)
+Handles real-time player interactions over WebSocket during the game.
 
-## Building with Gradle
-You can use the local Gradle Wrapper to build the application.
--   macOS: `./gradlew`
--   Linux: `./gradlew`
--   Windows: `./gradlew.bat`
+Interacts with:
+* AppService to validate tokens and retrieve user/game data
+* GameSessionService to process player actions during the game
 
-More Information about [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) and [Gradle](https://gradle.org/docs/).
 
-### Build
+### [WebSocketConfig.java](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/src/main/java/ch/uzh/ifi/hase/soprafs24/config/WebSocketConfig.java)
+Enables WebSocket messaging for the entire application and registers the /game-ws STOMP endpoint for frontend communication
 
-```bash
-./gradlew build
+Interacts with:
+* GameSessionController by defining the message broker /game/topic to send real-time updates
+
+
+### [TwilioService.java](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/src/main/java/ch/uzh/ifi/hase/soprafs24/service/TwilioService.java)
+Uses the Twilio Java SDK to manage room lifecycle (create, generate token, close room)
+
+Interacts with:
+* AppController to create Twilio video rooms and generate access tokens
+
+
+## Launch & Deployment
+### Prerequisites
+Before starting, make sure you have:
+* Java 17+
+* Gradle
+* Node.js (for frontend)
+* External Dependency: Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_API_KEY, TWILIO_API_SECRET)
+* Google Cloud SDK (for deployment)
+
+### Setup
+```
+git clone https://github.com/yutong-qiang/sopra-fs25-group-13-server.git
+```
+```
+cd server
 ```
 
-### Run
-
-```bash
+### Build and run the application
+```
+./gradlew build
+```
+```
 ./gradlew bootRun
 ```
 
-You can verify that the server is running by visiting `localhost:8080` in your browser.
-
-### Test
-
-```bash
+### Run tests
+```
 ./gradlew test
 ```
 
-### Development Mode
-You can start the backend in development mode, this will automatically trigger a new build and reload the application
-once the content of a file has been changed.
+### Deployment
+* The main branch is automatically deployed onto Google Cloud's App Engine
 
-Start two terminal windows and run:
+## Roadmap
+* Spectator Mode for non-players to watch ongoing games
+* AI-powered hint suggestions for solo / async play
+* Mobile layout optimization for better touch UX
 
-`./gradlew build --continuous`
+## Authors and Acknowledgement
+* Katie Jingxuan He - [cutie72](https://github.com/cutie72)
+* Lorenzo Frigoli - [lorefrigo](https://github.com/lorefrigo)
+* Luca Bärtschiger - [lucabarts](https://github.com/lucabarts)
+* Yutong Qiang - [yutong-qiang](https://github.com/yutong-qiang)
 
-and in the other one:
+Special thanks to our teaching assistant Lukas Niedhart for his guidance, support, and valuable feedback throughout the development process. 
+We also appreciate the course Software Engineering Lab for providing a hands-on learning experience.
 
-`./gradlew bootRun`
-
-If you want to avoid running all tests with every change, use the following command instead:
-
-`./gradlew build --continuous -xtest`
-
-## API Endpoint Testing with Postman
-We recommend using [Postman](https://www.getpostman.com) to test your API Endpoints.
-
-## Debugging
-If something is not working and/or you don't know what is going on. We recommend using a debugger and step-through the process step-by-step.
-
-To configure a debugger for SpringBoot's Tomcat servlet (i.e. the process you start with `./gradlew bootRun` command), do the following:
-
-1. Open Tab: **Run**/Edit Configurations
-2. Add a new Remote Configuration and name it properly
-3. Start the Server in Debug mode: `./gradlew bootRun --debug-jvm`
-4. Press `Shift + F9` or the use **Run**/Debug "Name of your task"
-5. Set breakpoints in the application where you need it
-6. Step through the process one step at a time
-
-## Testing
-Have a look here: https://www.baeldung.com/spring-boot-testing
-
-<br>
-<br>
-<br>
-
-## Docker
-
-### Introduction
-This year, for the first time, Docker will be used to ease the process of deployment.\
-Docker is a tool that uses containers as isolated environments, ensuring that the application runs consistently and uniformly across different devices.\
-Everything in this repository is already set up to minimize your effort for deployment.\
-All changes to the main branch will automatically be pushed to dockerhub and optimized for production.
-
-### Setup
-1. **One** member of the team should create an account on [dockerhub](https://hub.docker.com/), _incorporating the group number into the account name_, for example, `SoPra_group_XX`.\
-2. This account then creates a repository on dockerhub with the _same name as the group's Github repository name_.\
-3. Finally, the person's account details need to be added as [secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) to the group's repository:
-    - dockerhub_username (the username of the dockerhub account from step 1, for example, `SoPra_group_XX`)
-    - dockerhub_password (a generated PAT([personal access token](https://docs.docker.com/docker-hub/access-tokens/)) of the account with read and write access)
-    - dockerhub_repo_name (the name of the dockerhub repository from step 2)
-
-### Pull and run
-Once the image is created and has been successfully pushed to dockerhub, the image can be run on any machine.\
-Ensure that [Docker](https://www.docker.com/) is installed on the machine you wish to run the container.\
-First, pull (download) the image with the following command, replacing your username and repository name accordingly.
-
-```docker pull <dockerhub_username>/<dockerhub_repo_name>```
-
-Then, run the image in a container with the following command, again replacing _<dockerhub_username>_ and _<dockerhub_repo_name>_ accordingly.
-
-```docker run -p 3000:3000 <dockerhub_username>/<dockerhub_repo_name>```
+## License
+This project is licensed under the Apache License 2.0 – see the [LICENSE](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/LICENSE) file for details.
