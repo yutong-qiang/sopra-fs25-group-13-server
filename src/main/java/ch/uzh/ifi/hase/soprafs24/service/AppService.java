@@ -190,7 +190,7 @@ public class AppService {
     // get list of players in game session
     List<Player> players = playerRepository.findByGameSession(gameSession);
     // check that the game is not full
-    if (players.size() >= 8) {
+    if (players.size() > 8) {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game session is full");
     }
     

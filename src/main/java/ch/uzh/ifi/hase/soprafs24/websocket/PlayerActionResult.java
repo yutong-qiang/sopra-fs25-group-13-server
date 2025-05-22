@@ -6,6 +6,7 @@ public class PlayerActionResult {
     private String actionContent;
     private String actionResult;
     private String username;
+    private String chameleonUsername;
 
     public String getActionType() {
         return actionType;
@@ -37,5 +38,13 @@ public class PlayerActionResult {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getChameleonUsername() {
+        return chameleonUsername;
+    }
+
+    public void setChameleonUsername(String chameleonUsername) {
+        this.chameleonUsername = chameleonUsername;
     }
 }

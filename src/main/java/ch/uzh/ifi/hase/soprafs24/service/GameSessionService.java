@@ -173,6 +173,15 @@ public class GameSessionService {
             gameSession.setCurrentState(GameState.CHAMELEON_WIN);
             recordGameSessionEnd(gameSession);
         }
+        Player chameleon = players.stream()
+            .filter(Player::getIsChameleon)
+            .findFirst()
+            .orElse(null);
+
+        if (chameleon != null) {
+            result.setChameleonUsername(chameleon.getUser().getUsername());
+        }
+
         gameSessionRepository.save(gameSession);
         return result;
     }
@@ -293,6 +302,14 @@ public class GameSessionService {
         result.setActionResult(chameleon_win ? "CHAMELEON_WIN" : "PLAYERS_WIN");
 
         gameSession.setCurrentState(chameleon_win ? GameState.CHAMELEON_WIN : GameState.PLAYERS_WIN);
+        Player chameleon = playerRepository.findByGameSession(gameSession).stream()
+            .filter(Player::getIsChameleon)
+            .findFirst()
+            .orElse(null);
+
+        if (chameleon != null) {
+            result.setChameleonUsername(chameleon.getUser().getUsername());
+        }
         gameSessionRepository.save(gameSession);
 
         recordGameSessionEnd(gameSession);
