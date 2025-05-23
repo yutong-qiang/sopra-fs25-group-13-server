@@ -87,7 +87,10 @@ cd server
 * Yutong Qiang - [yutong-qiang](https://github.com/yutong-qiang)
 
 Special thanks to our teaching assistant Lukas Niedhart for his guidance, support, and valuable feedback throughout the development process. 
+
 We also appreciate the course Software Engineering Lab for providing a hands-on learning experience.
+
+Thanks to everyone who helped us test the software and provided valuable suggestions.
 
 ## License
 This project is licensed under the Apache License 2.0 – see the [LICENSE](https://github.com/yutong-qiang/sopra-fs25-group-13-server/blob/main/LICENSE) file for details.
