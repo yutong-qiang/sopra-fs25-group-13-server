@@ -129,7 +129,7 @@ public class GameSessionService {
         gameSession.setCurrentState(GameState.VOTING);
         gameSessionRepository.save(gameSession);
 
-        int votingDuration = 30;
+        int votingDuration = 90;
         long votingStartTime = System.currentTimeMillis();
 
         PlayerActionResult result = new PlayerActionResult();
@@ -174,9 +174,9 @@ public class GameSessionService {
             recordGameSessionEnd(gameSession);
         }
         Player chameleon = players.stream()
-            .filter(Player::getIsChameleon)
-            .findFirst()
-            .orElse(null);
+                .filter(Player::getIsChameleon)
+                .findFirst()
+                .orElse(null);
 
         if (chameleon != null) {
             result.setChameleonUsername(chameleon.getUser().getUsername());
@@ -303,9 +303,9 @@ public class GameSessionService {
 
         gameSession.setCurrentState(chameleon_win ? GameState.CHAMELEON_WIN : GameState.PLAYERS_WIN);
         Player chameleon = playerRepository.findByGameSession(gameSession).stream()
-            .filter(Player::getIsChameleon)
-            .findFirst()
-            .orElse(null);
+                .filter(Player::getIsChameleon)
+                .findFirst()
+                .orElse(null);
 
         if (chameleon != null) {
             result.setChameleonUsername(chameleon.getUser().getUsername());
